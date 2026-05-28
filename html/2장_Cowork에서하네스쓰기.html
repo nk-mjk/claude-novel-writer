@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2장. Cowork에서 하네스 쓰기 — Cowork에서 하네스?</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:       #3A4152;
+    --primary-300:   #A7ABB8;
+    --primary-400:   #7A7F90;
+    --primary-50:    #F4F5F7;
+    --accent:        #1A9E94;
+    --accent-50:     #E6F6F5;
+    --accent-100:    #BEEAE8;
+    --accent-700:    #0F5F58;
+    --neutral-100:   #F7F8FA;
+    --neutral-200:   #EDEEF2;
+    --neutral-300:   #D3D6DE;
+    --neutral-500:   #8B909C;
+    --neutral-700:   #4A4F5C;
+    --neutral-900:   #1C1E26;
+    --text-main:     #1C1E26;
+    --text-sub:      #4A4F5C;
+    --text-muted:    #8B909C;
+    --surface-page:  #F7F8FA;
+    --surface-card:  #FFFFFF;
+    --border:        #D3D6DE;
+    --border-subtle: #EDEEF2;
+    --radius-box:    2px;
+    --radius-badge:  100px;
+    --font:          'Noto Sans KR', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: #E8EAED;
+    color: var(--text-main);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: var(--surface-card);
+    margin: 12mm auto;
+    padding: 18mm 20mm 20mm;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    overflow: hidden;
+  }
+
+  @media print {
+    body { background: white; }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      height: 297mm;
+      margin: 0;
+      padding: 18mm 20mm 20mm;
+      box-shadow: none;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-child { page-break-after: avoid; break-after: avoid; }
+    @page { size: A4; margin: 0; }
+  }
+
+  .chapter-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .chapter-label::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .page-num {
+    position: absolute;
+    bottom: 14mm;
+    right: 20mm;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .footer-line {
+    position: absolute;
+    bottom: 20mm;
+    left: 20mm;
+    right: 20mm;
+    height: 1px;
+    background: var(--border-subtle);
+  }
+
+  .footer-title {
+    position: absolute;
+    bottom: 14mm;
+    left: 20mm;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  h1 { font-size: 40px; font-weight: 800; line-height: 1.2; color: var(--primary); }
+  h2 { font-size: 26px; font-weight: 700; line-height: 1.3; color: var(--primary); }
+  h3 { font-size: 19px; font-weight: 600; line-height: 1.4; color: var(--primary); }
+  p  { font-size: 15.5px; line-height: 1.8; color: var(--text-sub); }
+
+  .lead {
+    font-size: 17px;
+    line-height: 1.85;
+    color: var(--text-sub);
+    font-weight: 400;
+  }
+
+  .section-rule {
+    width: 32px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    margin: 14px 0 18px;
+  }
+
+  .callout {
+    background: var(--accent-50);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-box) var(--radius-box) 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+  }
+  .callout p {
+    font-size: 15.5px;
+    color: var(--accent-700);
+    font-weight: 500;
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  .badge {
+    display: inline-block;
+    background: var(--accent-50);
+    color: var(--accent-700);
+    border-radius: var(--radius-badge);
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .check-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .check-list li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 15px;
+    color: var(--text-sub);
+    line-height: 1.65;
+  }
+  .check-list li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    border-radius: 2px;
+    border: 1.5px solid var(--accent);
+    background: var(--accent-50);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    margin: 12px 0;
+  }
+  thead th {
+    background: var(--primary-50);
+    color: var(--primary);
+    font-weight: 700;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-sub);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: var(--neutral-100); }
+
+  .hl { color: var(--accent); font-weight: 600; }
+
+  /* 레이어 상태 칩 */
+  .chip-builtin {
+    display: inline-block;
+    background: var(--neutral-200);
+    color: var(--text-sub);
+    border-radius: var(--radius-badge);
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .chip-user {
+    display: inline-block;
+    background: var(--accent-50);
+    color: var(--accent-700);
+    border: 1px solid var(--accent-100);
+    border-radius: var(--radius-badge);
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .chip-limited {
+    display: inline-block;
+    background: var(--primary-50);
+    color: var(--primary-400);
+    border-radius: var(--radius-badge);
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     PAGE 1 — 챕터 커버
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div style="margin-bottom:60px; padding-top:8px;">
+    <span style="font-size:11px; color:var(--text-muted); font-weight:500; letter-spacing:0.1em;">
+      COWORK에서 하네스? — 핵심은 CLAUDE.md
+    </span>
+  </div>
+
+  <div class="chapter-label">Chapter 02</div>
+  <h1 style="font-size:40px; margin-bottom:16px; word-break:keep-all;">
+    Cowork에서<br>하네스 쓰기
+  </h1>
+  <div style="width:48px; height:4px; background:var(--accent); border-radius:2px; margin-bottom:24px;"></div>
+  <p class="lead" style="max-width:360px;">
+    1장에서 하네스가 무엇인지 알았으니, 이제 Cowork에서 실제로 무엇을 할 수 있는지 살펴볼 차례입니다. 생각보다 많은 것이 이미 준비되어 있습니다.
+  </p>
+
+  <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:20px 22px; margin-top:32px; max-width:440px;">
+    <div style="font-size:11px; font-weight:600; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:14px;">이 장에서 다루는 내용</div>
+    <ul class="check-list">
+      <li>Cowork는 이미 하네스다 — 내장된 레이어들</li>
+      <li>System Prompt — 손 못 대는 하네스 기반층</li>
+      <li>CLAUDE.md · Skills · MCP — 손 댈 수 있는 세 가지</li>
+      <li>CLAUDE.md가 없으면 어떻게 달라지나</li>
+    </ul>
+  </div>
+
+  <div style="position:absolute; right:18mm; bottom:22mm; font-size:96px; font-weight:800; color:var(--primary-50); line-height:1; user-select:none; letter-spacing:-4px;">02</div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">6</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 2 — Cowork는 이미 하네스다
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 02</div>
+  <h2 style="margin-bottom:6px;">Cowork는 이미 하네스다</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:20px;">
+    1장에서 Claude Code의 하네스를 5개 레이어로 살펴봤습니다.
+    그런데 Cowork도 동일한 구조 위에 있습니다. 차이는 하나입니다 —
+    대부분의 레이어가 <span class="hl">이미 내장</span>되어 있어서 따로 설정할 필요가 없다는 것입니다.
+  </p>
+
+  <!-- 5레이어 상태 테이블 -->
+  <table style="margin-bottom:20px;">
+    <thead>
+      <tr>
+        <th style="width:33%;">레이어</th>
+        <th style="width:24%;">Cowork 상태</th>
+        <th>설명</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge">Layer 1</span> <strong style="margin-left:6px; color:var(--text-main);">Tools</strong></td>
+        <td><span class="chip-builtin">내장 완료</span></td>
+        <td>Read·Write·Edit·Bash 등 기본 도구 제공. MCP로 확장 가능</td>
+      </tr>
+      <tr style="background:var(--accent-50);">
+        <td style="background:var(--accent-50);"><span class="badge">Layer 2</span> <strong style="margin-left:6px; color:var(--accent);">Context</strong></td>
+        <td style="background:var(--accent-50);"><span class="chip-user">직접 설계 ★</span></td>
+        <td style="background:var(--accent-50); color:var(--accent-700); font-weight:500;">CLAUDE.md로 규칙·기억·세계관을 직접 설계. 이 장의 핵심</td>
+      </tr>
+      <tr>
+        <td><span class="badge">Layer 3</span> <strong style="margin-left:6px; color:var(--text-main);">Subagent</strong></td>
+        <td><span class="chip-builtin">내장 완료</span></td>
+        <td>Task 툴로 서브에이전트 실행. Skills가 더 가벼운 방식으로 같은 역할을 함</td>
+      </tr>
+      <tr>
+        <td><span class="badge">Layer 4</span> <strong style="margin-left:6px; color:var(--text-main);">Hooks</strong></td>
+        <td><span class="chip-limited">플랫폼 관리</span></td>
+        <td>Claude Code처럼 스크립트를 직접 작성할 수는 없음. CLAUDE.md 규칙으로 일부 커버 가능</td>
+      </tr>
+      <tr>
+        <td><span class="badge">Layer 5</span> <strong style="margin-left:6px; color:var(--text-main);">Permissions</strong></td>
+        <td><span class="chip-builtin">내장 완료</span></td>
+        <td>Cowork가 안전한 기본값으로 관리. 사용자가 별도 설정 불필요</td>
+      </tr>
+      <tr style="background:var(--accent-50);">
+        <td style="background:var(--accent-50);"><span class="badge">+Skills</span> <strong style="margin-left:6px; color:var(--accent);">SKILL.md</strong></td>
+        <td style="background:var(--accent-50);"><span class="chip-user">직접 설계 ★</span></td>
+        <td style="background:var(--accent-50); color:var(--accent-700); font-weight:500;">전문 역할을 가진 경량 에이전트. Layer 1~3을 조합해 동작</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <p>5개 레이어 중 4개는 Cowork가 대신 처리합니다. 우리가 설계할 수 있는 것은 딱 두 가지 — <strong>CLAUDE.md</strong>와 <strong>Skills</strong>입니다. 그리고 이 두 가지만으로 Claude의 행동을 완전히 바꿀 수 있습니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">7</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 3 — System Prompt (손 못 대는 기반층)
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 02</div>
+  <h2 style="margin-bottom:6px;">System Prompt — 손 못 대는 하네스 기반층</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:20px;">
+    Cowork에는 사용자가 볼 수도, 건드릴 수도 없는 레이어가 하나 있습니다.
+    바로 <span class="hl">System Prompt</span>입니다. 매 대화 시작 시 자동으로 로딩되는
+    Anthropic의 설계 기반층으로, 하네스의 가장 아래에 깔려 있습니다.
+  </p>
+
+  <!-- System Prompt 구성 요소 -->
+  <div style="border:1.5px solid var(--border); border-radius:var(--radius-box); overflow:hidden; margin-bottom:22px;">
+
+    <div style="background:var(--primary); padding:12px 20px; display:flex; align-items:center; gap:12px;">
+      <div style="width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.3);"></div>
+      <div style="width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.3);"></div>
+      <div style="width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,0.3);"></div>
+      <span style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.7); margin-left:4px; letter-spacing:0.05em;">System Prompt — Anthropic 관리 (읽기 전용)</span>
+    </div>
+
+    <div style="padding:18px 20px; background:var(--neutral-100); display:flex; flex-direction:column; gap:12px;">
+
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+        <div style="background:var(--surface-card); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:14px 16px; height:110px; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:11px; font-weight:700; color:var(--primary-400); letter-spacing:0.08em; margin-bottom:6px; text-transform:uppercase;">Tool 정의</div>
+          <div style="font-size:13.5px; color:var(--text-sub); line-height:1.5;">Claude가 사용할 수 있는 도구의 종류와 범위를 선언</div>
+        </div>
+        <div style="background:var(--surface-card); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:14px 16px; height:110px; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:11px; font-weight:700; color:var(--primary-400); letter-spacing:0.08em; margin-bottom:6px; text-transform:uppercase;">행동 기준</div>
+          <div style="font-size:13.5px; color:var(--text-sub); line-height:1.5;">Anthropic의 가이드라인과 Cowork 모드의 기본 동작 방식</div>
+        </div>
+        <div style="background:var(--surface-card); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:14px 16px; height:110px; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:11px; font-weight:700; color:var(--primary-400); letter-spacing:0.08em; margin-bottom:6px; text-transform:uppercase;">권한 경계</div>
+          <div style="font-size:13.5px; color:var(--text-sub); line-height:1.5;">무엇을 할 수 있고 없는지의 최상위 경계선 설정</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 레이어 관계 시각화 -->
+  <div style="margin-bottom:22px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <div style="font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase;">하네스 레이어 구조</div>
+      <div style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:4px;">↑ 위로 쌓임</div>
+    </div>
+
+    <div style="display:flex; flex-direction:column-reverse; gap:4px;">
+      <!-- 기반층 — 맨 아래 -->
+      <div style="background:var(--primary); border-radius:var(--radius-box); padding:12px 18px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:15px; font-weight:700; color:#FFFFFF;">System Prompt</span>
+        <span style="font-size:12px; color:rgba(255,255,255,0.6); background:rgba(255,255,255,0.12); border-radius:var(--radius-badge); padding:3px 12px;">Anthropic 관리 · 사용자 접근 불가</span>
+      </div>
+      <!-- Layer 1 -->
+      <div style="background:var(--accent-50); border:1.5px solid var(--accent-100); border-radius:var(--radius-box); padding:12px 18px; display:flex; align-items:center; justify-content:space-between; margin-left:0;">
+        <span style="font-size:15px; font-weight:700; color:var(--accent-700);">MCP · 플러그인</span>
+        <span style="font-size:12px; font-weight:700; color:var(--accent); background:var(--accent-100); border-radius:var(--radius-badge); padding:3px 12px;">Layer 1 · 사용자 설치 확장 ★</span>
+      </div>
+      <!-- Layer 2 -->
+      <div style="background:var(--accent-50); border:1.5px solid var(--accent-100); border-radius:var(--radius-box); padding:12px 18px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:15px; font-weight:700; color:var(--accent-700);">CLAUDE.md</span>
+        <span style="font-size:12px; font-weight:700; color:var(--accent); background:var(--accent-100); border-radius:var(--radius-badge); padding:3px 12px;">Layer 2 · 사용자 직접 설계 ★</span>
+      </div>
+      <!-- Layer 3 — 맨 위 -->
+      <div style="background:var(--accent-50); border:1.5px solid var(--accent-100); border-radius:var(--radius-box); padding:12px 18px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:15px; font-weight:700; color:var(--accent-700);">Skills</span>
+        <span style="font-size:12px; font-weight:700; color:var(--accent); background:var(--accent-100); border-radius:var(--radius-badge); padding:3px 12px;">Layer 3 · 사용자 직접 설계 ★</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p>CLAUDE.md는 System Prompt 위에 얹히는 추가 컨텍스트입니다. Claude는 System Prompt의 기본 규칙을 따르면서, 동시에 CLAUDE.md에 적힌 내용도 함께 읽고 행동합니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">8</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 4 — CLAUDE.md vs Skills
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 02</div>
+  <h2 style="margin-bottom:6px;">CLAUDE.md · Skills · MCP — 손 댈 수 있는 세 가지</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:20px;">
+    두 가지는 역할이 다릅니다. CLAUDE.md는 <span class="hl">Claude가 항상 따르는 규칙</span>이고,
+    Skills는 <span class="hl">특정 상황에서 호출되는 전문가</span>입니다.
+    자동차로 비유하면 CLAUDE.md는 운전 매너이고 Skills는 목적지별 내비게이션입니다.
+  </p>
+
+  <!-- 두 카드 비교 -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+
+    <!-- CLAUDE.md 카드 -->
+    <div style="border:2px solid var(--accent-100); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--accent); padding:14px 18px;">
+        <div style="font-size:12px; font-weight:700; color:rgba(255,255,255,0.75); letter-spacing:0.1em; margin-bottom:4px;">LAYER 2 · CONTEXT</div>
+        <div style="font-size:20px; font-weight:800; color:#FFFFFF;">CLAUDE.md</div>
+      </div>
+      <div style="padding:16px 18px; background:var(--surface-card);">
+        <div style="font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; margin-bottom:10px; text-transform:uppercase;">역할</div>
+        <p style="font-size:14.5px; margin-bottom:14px;">
+          매 대화 시작 시 자동으로 로딩되는 <strong>전역 규칙서</strong>입니다.
+          말투, 작업 방식, 저장 위치, 금지 사항 등 Claude가 항상 지켜야 할 것들을 담습니다.
+        </p>
+        <div style="font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; margin-bottom:8px; text-transform:uppercase;">담는 내용</div>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
+          <li style="font-size:13.5px; color:var(--text-sub); display:flex; gap:8px; align-items:flex-start;">
+            <span style="color:var(--accent); font-weight:700; flex-shrink:0;">→</span> 말투·언어 설정
+          </li>
+          <li style="font-size:13.5px; color:var(--text-sub); display:flex; gap:8px; align-items:flex-start;">
+            <span style="color:var(--accent); font-weight:700; flex-shrink:0;">→</span> 파일 저장 위치·이름 규칙
+          </li>
+          <li style="font-size:13.5px; color:var(--text-sub); display:flex; gap:8px; align-items:flex-start;">
+            <span style="color:var(--accent); font-weight:700; flex-shrink:0;">→</span> 확인 없이 하면 안 되는 것들
+          </li>
+          <li style="font-size:13.5px; color:var(--text-sub); display:flex; gap:8px; align-items:flex-start;">
+            <span style="color:var(--accent); font-weight:700; flex-shrink:0;">→</span> 스킬 호출 트리거 조건
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Skills 카드 -->
+    <div style="border:2px solid var(--border); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--primary); padding:14px 18px;">
+        <div style="font-size:12px; font-weight:700; color:rgba(255,255,255,0.55); letter-spacing:0.1em; margin-bottom:4px;">SKILL.md · AGENT</div>
+        <div style="font-size:20px; font-weight:800; color:#FFFFFF;">Skills</div>
+      </div>
+      <div style="padding:16px 18px; background:var(--surface-card);">
+        <div style="font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; margin-bottom:10px; text-transform:uppercase;">역할</div>
+        <p style="font-size:14.5px; margin-bottom:14px;">
+          특정 작업을 위해 <strong>호출되는 전문가 에이전트</strong>입니다.
+          각 스킬은 자신만의 절차와 규칙을 SKILL.md로 정의하고, 필요할 때만 활성화됩니다.
+        </p>
+        <div style="font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; margin-bottom:8px; text-transform:uppercase;">담는 내용</div>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
+          <li style="font-size:13.5px; color:var(--text-sub); display:flex; gap:8px; align-items:flex-start;">
+            <span style="color:var(--primary-400); font-weight:700; flex-shrink:0;">→</span> 작업 절차·단계별 흐름
+          </li>
+          <li style="font-size:13.5px; color:var(--text-sub); display:flex; gap:8px; align-items:flex-start;">
+            <span style="color:var(--primary-400); font-weight:700; flex-shrink:0;">→</span> 해당 작업의 판단 기준
+          </li>
+          <li style="font-size:13.5px; color:var(--text-sub); display:flex; gap:8px; align-items:flex-start;">
+            <span style="color:var(--primary-400); font-weight:700; flex-shrink:0;">→</span> 다른 스킬 호출 조건
+          </li>
+          <li style="font-size:13.5px; color:var(--text-sub); display:flex; gap:8px; align-items:flex-start;">
+            <span style="color:var(--primary-400); font-weight:700; flex-shrink:0;">→</span> 결과물 형식·저장 규칙
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MCP·플러그인 -->
+  <div style="border:1.5px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden; margin-bottom:12px;">
+    <div style="background:var(--neutral-200); padding:10px 18px; display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <span style="font-size:11px; font-weight:700; color:var(--text-muted); letter-spacing:0.1em; text-transform:uppercase;">LAYER 1 · TOOLS 확장</span>
+        <span style="font-size:16px; font-weight:800; color:var(--primary); margin-left:12px;">MCP · 플러그인</span>
+      </div>
+      <span class="chip-builtin" style="font-size:11px;">사용자 설치 확장</span>
+    </div>
+    <div style="padding:14px 18px; background:var(--surface-card); display:flex; gap:24px; align-items:flex-start;">
+      <p style="font-size:14px; color:var(--text-sub); margin:0; flex:1;">
+        MCP(Model Context Protocol)와 플러그인은 Claude에게 외부 도구·서비스를 연결하는 <strong>Layer 1 확장</strong>입니다. Slack, Gmail, Google Drive 같은 앱을 직접 연동하거나, 특수 목적의 도구 묶음을 플러그인으로 설치합니다.
+      </p>
+      <div style="flex-shrink:0; display:flex; flex-direction:column; gap:4px; min-width:140px;">
+        <div style="font-size:12px; color:var(--text-muted); font-weight:600; margin-bottom:2px; letter-spacing:0.04em;">연결 예시</div>
+        <div style="font-size:13px; color:var(--text-sub); display:flex; gap:6px; align-items:center;">
+          <span style="color:var(--primary-400); font-weight:700;">→</span> Gmail·Calendar 연동
+        </div>
+        <div style="font-size:13px; color:var(--text-sub); display:flex; gap:6px; align-items:center;">
+          <span style="color:var(--primary-400); font-weight:700;">→</span> Figma·Canva 연동
+        </div>
+        <div style="font-size:13px; color:var(--text-sub); display:flex; gap:6px; align-items:center;">
+          <span style="color:var(--primary-400); font-weight:700;">→</span> 전용 스킬 묶음 설치
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 관계 설명 -->
+  <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:16px 18px;">
+    <div style="font-size:12px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:16px;">세 레이어의 관계</div>
+    <div style="display:flex; align-items:flex-start; gap:0;">
+
+      <!-- MCP: 독립 레이어 -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-right:16px;">
+        <div style="background:var(--neutral-200); border-radius:var(--radius-box); padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--primary); white-space:nowrap;">MCP · 플러그인</div>
+        <div style="font-size:12px; color:var(--text-muted); text-align:center; line-height:1.5;">도구 확장<br>(독립 레이어)</div>
+      </div>
+
+      <!-- 구분선 -->
+      <div style="width:1px; background:var(--border); align-self:stretch; flex-shrink:0;"></div>
+
+      <!-- CLAUDE.md → Skills -->
+      <div style="display:flex; align-items:center; gap:12px; padding-left:16px;">
+
+        <!-- CLAUDE.md -->
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+          <div style="background:var(--accent-50); border:1px solid var(--accent-100); border-radius:var(--radius-box); padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--accent-700); white-space:nowrap;">CLAUDE.md</div>
+          <div style="font-size:12px; color:var(--text-muted);">규칙 · 트리거</div>
+        </div>
+
+        <!-- 화살표 -->
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px; padding-bottom:18px;">
+          <div style="font-size:11px; color:var(--text-muted); white-space:nowrap;">트리거 설정</div>
+          <div style="font-size:20px; color:var(--accent); font-weight:700; line-height:1;">→</div>
+        </div>
+
+        <!-- Skills -->
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+          <div style="background:var(--primary-50); border:1px solid var(--border); border-radius:var(--radius-box); padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--primary); white-space:nowrap;">Skills</div>
+          <div style="font-size:12px; color:var(--text-muted); text-align:center; line-height:1.5;">전문 실행<br><span style="font-size:11px;">※ MCP 도구 활용</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">9</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 4 — 실전 감각 + 다음 장 예고
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 02</div>
+  <h2 style="margin-bottom:6px;">CLAUDE.md가 없으면 어떻게 달라지나</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:20px;">
+    CLAUDE.md가 없어도 Cowork는 작동합니다. 하지만 Claude는 매 대화를 백지 상태에서 시작합니다.
+    말투도, 저장 위치도, 금지 사항도 — 매번 다시 말해줘야 합니다.
+  </p>
+
+  <!-- 비교 테이블 -->
+  <table style="margin-bottom:24px;">
+    <thead>
+      <tr>
+        <th style="width:30%;">상황</th>
+        <th>CLAUDE.md 없을 때</th>
+        <th>CLAUDE.md 있을 때</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>말투·언어</strong></td>
+        <td style="color:var(--text-muted);">매번 "한국어로 해줘" 요청 필요</td>
+        <td style="color:var(--accent-700); font-weight:500);">자동으로 설정된 말투 유지</td>
+      </tr>
+      <tr>
+        <td><strong>파일 저장</strong></td>
+        <td style="color:var(--text-muted);">저장 위치를 매번 지정해야 함</td>
+        <td style="color:var(--accent-700); font-weight:500);">규칙에 따라 자동 저장</td>
+      </tr>
+      <tr>
+        <td><strong>작업 방식</strong></td>
+        <td style="color:var(--text-muted);">Claude가 임의로 판단</td>
+        <td style="color:var(--accent-700); font-weight:500);">정해진 절차대로 진행</td>
+      </tr>
+      <tr>
+        <td><strong>스킬 연동</strong></td>
+        <td style="color:var(--text-muted);">스킬 트리거 조건 없음</td>
+        <td style="color:var(--accent-700); font-weight:500);">상황에 맞는 스킬 자동 호출</td>
+      </tr>
+      <tr>
+        <td><strong>일관성</strong></td>
+        <td style="color:var(--text-muted);">대화마다 다른 결과</td>
+        <td style="color:var(--accent-700); font-weight:500);">어느 대화에서도 동일한 행동</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <p>CLAUDE.md는 한 번 잘 만들어두면 이후 모든 대화에서 작동합니다. 매번 긴 지시를 반복하는 대신, 그 지시를 파일 하나에 담아두는 것입니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">10</div>
+</div>
+
+</body>
+</html>

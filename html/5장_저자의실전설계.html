@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5장. 저자의 실전 설계 — Cowork에서 하네스?</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:       #3A4152;
+    --primary-300:   #A7ABB8;
+    --primary-400:   #7A7F90;
+    --primary-50:    #F4F5F7;
+    --accent:        #1A9E94;
+    --accent-50:     #E6F6F5;
+    --accent-100:    #BEEAE8;
+    --accent-700:    #0F5F58;
+    --neutral-100:   #F7F8FA;
+    --neutral-200:   #EDEEF2;
+    --neutral-300:   #D3D6DE;
+    --neutral-500:   #8B909C;
+    --neutral-700:   #4A4F5C;
+    --neutral-900:   #1C1E26;
+    --text-main:     #1C1E26;
+    --text-sub:      #4A4F5C;
+    --text-muted:    #8B909C;
+    --surface-page:  #F7F8FA;
+    --surface-card:  #FFFFFF;
+    --border:        #D3D6DE;
+    --border-subtle: #EDEEF2;
+    --radius-box:    2px;
+    --radius-badge:  100px;
+    --font:          'Noto Sans KR', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: #E8EAED;
+    color: var(--text-main);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: var(--surface-card);
+    margin: 12mm auto;
+    padding: 18mm 20mm 20mm;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    overflow: hidden;
+  }
+
+  @media print {
+    body { background: white; }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      height: 297mm;
+      margin: 0;
+      padding: 18mm 20mm 20mm;
+      box-shadow: none;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-child { page-break-after: avoid; break-after: avoid; }
+    @page { size: A4; margin: 0; }
+  }
+
+  .chapter-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .chapter-label::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .page-num {
+    position: absolute;
+    bottom: 14mm;
+    right: 20mm;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .footer-line {
+    position: absolute;
+    bottom: 20mm;
+    left: 20mm;
+    right: 20mm;
+    height: 1px;
+    background: var(--border-subtle);
+  }
+
+  .footer-title {
+    position: absolute;
+    bottom: 14mm;
+    left: 20mm;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  h1 { font-size: 40px; font-weight: 800; line-height: 1.2; color: var(--primary); }
+  h2 { font-size: 26px; font-weight: 700; line-height: 1.3; color: var(--primary); }
+  h3 { font-size: 19px; font-weight: 600; line-height: 1.4; color: var(--primary); }
+
+  p { font-size: 15px; color: var(--text-sub); line-height: 1.75; }
+
+  .lead {
+    font-size: 16px;
+    color: var(--text-sub);
+    line-height: 1.75;
+  }
+
+  .section-rule {
+    width: 100%;
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 10px 0 20px;
+  }
+
+  .callout {
+    background: var(--primary-50);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-box) var(--radius-box) 0;
+    padding: 14px 18px;
+    margin-top: 16px;
+  }
+  .callout p {
+    font-size: 14px;
+    color: var(--text-sub);
+    line-height: 1.7;
+  }
+
+  ul.check-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  ul.check-list li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--text-sub);
+    line-height: 1.65;
+  }
+  ul.check-list li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    border-radius: 2px;
+    border: 1.5px solid var(--accent);
+    background: var(--accent-50);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  thead th {
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-sub);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: var(--neutral-100); }
+
+  .hl { color: var(--accent); font-weight: 600; }
+
+  .code-block {
+    background: var(--primary-50);
+    border-left: 3px solid var(--primary-300);
+    border-radius: 0 var(--radius-box) var(--radius-box) 0;
+    padding: 14px 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.85;
+    color: var(--text-sub);
+    margin: 10px 0;
+  }
+  .code-comment { color: var(--text-muted); font-style: italic; }
+  .code-trigger { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 22 — 챕터 커버
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div style="margin-bottom:60px; padding-top:8px;">
+    <span style="font-size:11px; color:var(--text-muted); font-weight:500; letter-spacing:0.1em;">
+      COWORK에서 하네스? — 핵심은 CLAUDE.md
+    </span>
+  </div>
+
+  <div class="chapter-label">Chapter 05</div>
+  <h1 style="font-size:36px; margin-bottom:16px; word-break:keep-all;">
+    저자의<br>실전 설계
+  </h1>
+  <div style="width:48px; height:4px; background:var(--accent); border-radius:2px; margin-bottom:24px;"></div>
+  <p class="lead" style="max-width:400px;">
+    실제로 어떻게 설계하고 있는지 공개합니다. 파일 구조, 공용폴더 운영 방식, CLAUDE.md를 얇게 유지하는 방법까지 — 개념이 아닌 실전입니다.
+  </p>
+
+  <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:20px 22px; margin-top:32px; max-width:440px;">
+    <div style="font-size:11px; font-weight:600; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:14px;">이 장에서 다루는 내용</div>
+    <ul class="check-list">
+      <li>철학 — CLAUDE.md는 트리거만 남긴다</li>
+      <li>공용폴더 — 여러 세션이 공유하는 파일들</li>
+      <li>CLAUDE.md 구조 들여다보기</li>
+      <li>이렇게 쓰는 이유</li>
+      <li>CLAUDE.md 전체 예시 — 주석과 함께</li>
+    </ul>
+  </div>
+
+  <div style="position:absolute; right:18mm; bottom:22mm; font-size:96px; font-weight:800; color:var(--primary-50); line-height:1; user-select:none; letter-spacing:-4px;">05</div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">22</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 23 — 철학: CLAUDE.md는 트리거만 남긴다
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 05</div>
+  <h2 style="margin-bottom:6px;">철학 — CLAUDE.md는 트리거만 남긴다</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:14px; color:var(--text-muted); font-style:italic; font-size:14px;">
+    3장에서 원칙을 다뤘다면, 여기서는 실제로 이렇게 구현했습니다.
+  </p>
+
+  <p style="margin-bottom:20px;">
+    CLAUDE.md를 처음 만들 때 흔히 저지르는 실수가 있습니다. 모든 걸 한 파일 안에 다 써넣는 것입니다. 말투, 규칙, 예시, 예외 처리, 참고 자료까지 — 한 곳에 뭉쳐 있으면 수정할 때 어디를 고쳐야 할지 찾기 어렵고, 다른 프로젝트에서 재사용하기도 힘들어집니다. <span class="hl">역할별로 파일을 분리하고, CLAUDE.md에는 연결 고리만</span> 남기는 방식이 이 구조의 핵심입니다.
+  </p>
+
+  <!-- 트리거 패턴 시각화 -->
+  <div style="margin-bottom:20px;">
+    <div style="font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:12px;">트리거 패턴 — 내용 대신 연결만 남긴다</div>
+
+    <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch;">
+
+      <!-- CLAUDE.md (얇음) -->
+      <div style="border:2px solid var(--accent); border-radius:var(--radius-box); overflow:hidden;">
+        <div style="background:var(--accent); padding:8px 14px;">
+          <span style="font-size:12px; font-weight:700; color:#fff;">CLAUDE.md</span>
+          <span style="font-size:11px; color:rgba(255,255,255,0.7); margin-left:6px;">트리거만</span>
+        </div>
+        <div style="padding:14px 16px; font-family:'Courier New',monospace; font-size:12px; line-height:2; color:var(--text-sub);">
+          <div><span class="code-comment">대화 시작 시 →</span></div>
+          <div><span class="code-trigger">세계관.md</span>를 읽는다</div>
+          <div style="margin-top:6px;"><span class="code-comment">미드저니 작업 시 →</span></div>
+          <div><span class="code-trigger">mj_prompt_rules.md</span>를 읽는다</div>
+          <div style="margin-top:6px;"><span class="code-comment">아이디어 메모 요청 시 →</span></div>
+          <div><span class="code-trigger">아이디어메모.md</span>에 추가한다</div>
+        </div>
+      </div>
+
+      <!-- 화살표 -->
+      <div style="display:flex; align-items:center; padding:0 14px; color:var(--accent); font-size:22px;">→</div>
+
+      <!-- 실제 파일들 -->
+      <div style="display:flex; flex-direction:column; gap:8px; justify-content:center;">
+        <div style="background:var(--accent-50); border:1px solid var(--accent-100); border-radius:var(--radius-box); padding:10px 14px;">
+          <div style="font-size:12px; font-weight:700; color:var(--accent);">세계관.md</div>
+          <div style="font-size:12px; color:var(--text-muted);">호칭 · 말투 · 관계 설정</div>
+        </div>
+        <div style="background:var(--accent-50); border:1px solid var(--accent-100); border-radius:var(--radius-box); padding:10px 14px;">
+          <div style="font-size:12px; font-weight:700; color:var(--accent);">mj_prompt_rules.md</div>
+          <div style="font-size:12px; color:var(--text-muted);">미드저니 프롬프트 규칙</div>
+        </div>
+        <div style="background:var(--accent-50); border:1px solid var(--accent-100); border-radius:var(--radius-box); padding:10px 14px;">
+          <div style="font-size:12px; font-weight:700; color:var(--accent);">아이디어메모.md</div>
+          <div style="font-size:12px; color:var(--text-muted);">즉시 메모 시스템</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 두꺼운 CLAUDE.md vs 얇은 CLAUDE.md -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+
+    <div style="border:1.5px solid var(--border); border-radius:var(--radius-box); padding:14px 16px;">
+      <div style="font-size:13px; font-weight:700; color:var(--text-sub); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <span style="background:var(--neutral-300); border-radius:50%; width:18px; height:18px; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--text-sub); flex-shrink:0;">✗</span>
+        한 파일에 다 몰아넣기
+      </div>
+      <div style="font-size:13px; color:var(--text-muted); line-height:1.7;">내용이 섞여 있어 수정할 때 어디를 고쳐야 할지 찾기 어려움. 특정 내용만 업데이트하려 해도 파일 전체를 열어야 함. 여러 프로젝트에서 재사용 불가.</div>
+    </div>
+
+    <div style="border:1.5px solid var(--accent-100); background:var(--accent-50); border-radius:var(--radius-box); padding:14px 16px;">
+      <div style="font-size:13px; font-weight:700; color:var(--accent-700); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <span style="background:var(--accent); color:#fff; border-radius:50%; width:18px; height:18px; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0;">✓</span>
+        트리거만 두고 파일로 분리
+      </div>
+      <div style="font-size:13px; color:var(--accent-700); line-height:1.7;">CLAUDE.md는 짧게 유지. 내용 수정은 해당 파일만. 공용폴더의 파일은 어떤 프로젝트에서도 재사용 가능.</div>
+    </div>
+
+  </div>
+
+  <div class="callout">
+    <p>CLAUDE.md는 <strong>무엇을 할지를 담는 파일이 아닙니다.</strong> 어떤 상황에서 어떤 파일을 참고하라는 연결 고리만 담는 것이 이상적입니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">23</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 24 — 공용폴더 운영
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 05</div>
+  <h2 style="margin-bottom:6px;">공용폴더 — 여러 세션이 공유하는 파일들</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:20px;">
+    Cowork는 세션마다 새로운 대화가 시작됩니다. 그런데 매번 같은 파일을 첨부하거나 같은 설명을 반복할 필요는 없습니다. <span class="hl">공용폴더 하나</span>를 만들어두고, CLAUDE.md에 "거기 있다"고 한 번만 써두면 됩니다. 어떤 세션에서 시작해도 Claude가 그 폴더를 참조합니다.
+  </p>
+
+  <!-- 폴더 구조 시각화 -->
+  <div style="border:1.5px solid var(--border); border-radius:var(--radius-box); overflow:hidden; margin-bottom:18px;">
+    <div style="background:var(--primary); padding:10px 16px; display:flex; align-items:center; gap:10px;">
+      <span style="font-size:13px; font-weight:700; color:#fff; font-family:'Courier New',monospace;">claude_work/</span>
+      <span style="font-size:11px; color:rgba(255,255,255,0.5);">— 작업 루트 폴더</span>
+    </div>
+    <div style="padding:10px 16px; font-family:'Courier New',monospace; font-size:13px; color:var(--text-sub); line-height:1.7;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="color:var(--accent); font-weight:700;">📁 0.공용/</span>
+        <span style="font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--text-muted);">← 여기가 공용폴더</span>
+      </div>
+      <div style="padding-left:20px; color:var(--text-muted);">
+        <div>├── 세계관.md</div>
+        <div>├── 아이디어메모.md</div>
+        <div>├── 인수인계서_템플릿.md</div>
+        <div>├── mj_prompt_rules.md</div>
+        <div>├── fonts/</div>
+        <div>└── design-tokens.md</div>
+      </div>
+      <div style="margin-top:4px;">📁 0528_01_프로젝트A/</div>
+      <div>📁 0601_01_프로젝트B/</div>
+      <div>📄 CLAUDE.md</div>
+    </div>
+  </div>
+
+  <!-- 파일별 역할 테이블 -->
+  <table style="margin-bottom:18px;">
+    <thead>
+      <tr>
+        <th style="width:34%;">파일 / 폴더</th>
+        <th>역할</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>세계관.md</strong></td>
+        <td>Claude와의 관계 설정. 호칭, 말투, 기억할 것들을 담아두는 파일.</td>
+      </tr>
+      <tr>
+        <td><strong>아이디어메모.md</strong></td>
+        <td>대화 중 생각난 내용을 Claude가 즉시 기록하는 시스템. 나중에 다시 찾아볼 수 있다.</td>
+      </tr>
+      <tr>
+        <td><strong>인수인계서_템플릿.md</strong></td>
+        <td>세션이 끊길 때 다음 대화로 넘기는 인수인계서 표준 양식.</td>
+      </tr>
+      <tr>
+        <td><strong>mj_prompt_rules.md</strong></td>
+        <td>특정 작업 트리거 시 참조하는 규칙 파일. 작업별로 이런 파일을 추가할 수 있다.</td>
+      </tr>
+      <tr>
+        <td><strong>fonts/</strong></td>
+        <td>한글 폰트 모음. SVG·이미지 작업 시 매번 챙기지 않아도 여기서 참조.</td>
+      </tr>
+      <tr>
+        <td><strong>design-tokens.md</strong></td>
+        <td>자주 쓰는 디자인 토큰 정리. 한 번 만들어두면 어떤 작업에서도 일관된 디자인 적용 가능.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <p><strong>fonts/, design-tokens.md처럼 매번 챙기기 번거로운 자료</strong>를 공용폴더에 두고 CLAUDE.md에 한 줄로 위치만 알려두면 됩니다. 이후로는 어떤 세션에서 시작해도 Claude가 알아서 찾아 씁니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">24</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 25 — CLAUDE.md 구조 들여다보기
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 05</div>
+  <h2 style="margin-bottom:6px;">CLAUDE.md 구조 들여다보기</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:20px;">
+    실제 사용 중인 CLAUDE.md의 섹션 구조입니다. 내용을 통째로 싣기보다, 어떤 섹션이 있고 각각이 어떤 역할을 하는지 구조만 봐도 설계 방향을 참고할 수 있습니다.
+  </p>
+
+  <!-- 섹션 구조 다이어그램 -->
+  <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
+
+    <!-- 섹션 1 -->
+    <div style="display:grid; grid-template-columns:180px 1fr; gap:0; border:1px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--accent-50); border-right:1px solid var(--accent-100); padding:12px 14px; display:flex; flex-direction:column; justify-content:center;">
+        <div style="font-size:11px; font-weight:700; color:var(--accent); letter-spacing:0.06em; margin-bottom:2px;">1. 기본 행동 규칙</div>
+        <div style="display:inline-flex; align-items:center; gap:4px; margin-top:4px;">
+          <span style="background:var(--accent); color:#fff; font-size:10px; font-weight:700; border-radius:var(--radius-badge); padding:1px 8px;">트리거형</span>
+        </div>
+      </div>
+      <div style="padding:12px 16px;">
+        <div style="font-size:13.5px; color:var(--text-sub); line-height:1.65;">대화 시작 시 세계관.md를 읽는다. 답변 형식, 질문 규칙, 대화 vs 실행 구분, 메모 트리거 등 기본 행동 패턴. 일부는 트리거, 일부는 짧은 직접 규칙.</div>
+      </div>
+    </div>
+
+    <!-- 섹션 2 -->
+    <div style="display:grid; grid-template-columns:180px 1fr; gap:0; border:1px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--neutral-100); border-right:1px solid var(--border-subtle); padding:12px 14px; display:flex; flex-direction:column; justify-content:center;">
+        <div style="font-size:11px; font-weight:700; color:var(--primary); letter-spacing:0.06em; margin-bottom:2px;">2. 제약 조건</div>
+        <div style="display:inline-flex; align-items:center; gap:4px; margin-top:4px;">
+          <span style="background:var(--neutral-300); color:var(--text-sub); font-size:10px; font-weight:700; border-radius:var(--radius-badge); padding:1px 8px;">직접 규칙형</span>
+        </div>
+      </div>
+      <div style="padding:12px 16px;">
+        <div style="font-size:13.5px; color:var(--text-sub); line-height:1.65;">파일 삭제 금지, 덮어쓰기 전 확인, 요청받은 것만 수정 등 Claude의 행동을 제한하는 규칙들. 여기는 파일로 빼지 않고 직접 기술.</div>
+      </div>
+    </div>
+
+    <!-- 섹션 3 -->
+    <div style="display:grid; grid-template-columns:180px 1fr; gap:0; border:1px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--neutral-100); border-right:1px solid var(--border-subtle); padding:12px 14px; display:flex; flex-direction:column; justify-content:center;">
+        <div style="font-size:11px; font-weight:700; color:var(--primary); letter-spacing:0.06em; margin-bottom:2px;">3. 작업 워크플로우</div>
+        <div style="display:inline-flex; align-items:center; gap:4px; margin-top:4px;">
+          <span style="background:var(--neutral-300); color:var(--text-sub); font-size:10px; font-weight:700; border-radius:var(--radius-badge); padding:1px 8px;">직접 규칙형</span>
+        </div>
+      </div>
+      <div style="padding:12px 16px;">
+        <div style="font-size:13.5px; color:var(--text-sub); line-height:1.65;">파일 생성 순서, 작업 폴더 명명 규칙, 폴더 생성 전 기존 폴더 확인 등. 작업 단위마다 반복되는 절차를 정리해둔 섹션.</div>
+      </div>
+    </div>
+
+    <!-- 섹션 4 -->
+    <div style="display:grid; grid-template-columns:180px 1fr; gap:0; border:1px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--accent-50); border-right:1px solid var(--accent-100); padding:12px 14px; display:flex; flex-direction:column; justify-content:center;">
+        <div style="font-size:11px; font-weight:700; color:var(--accent); letter-spacing:0.06em; margin-bottom:2px;">4. 스킬 & 도구 규칙</div>
+        <div style="display:inline-flex; align-items:center; gap:4px; margin-top:4px;">
+          <span style="background:var(--accent); color:#fff; font-size:10px; font-weight:700; border-radius:var(--radius-badge); padding:1px 8px;">트리거형</span>
+        </div>
+      </div>
+      <div style="padding:12px 16px;">
+        <div style="font-size:13.5px; color:var(--text-sub); line-height:1.65;">미드저니 작업 시 mj_prompt_rules.md 참조, 한글 폰트는 fonts/ 폴더 우선 사용 등. 도구별 규칙이 생길 때마다 트리거를 추가하는 방식으로 확장.</div>
+      </div>
+    </div>
+
+    <!-- 섹션 5 -->
+    <div style="display:grid; grid-template-columns:180px 1fr; gap:0; border:1px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--accent-50); border-right:1px solid var(--accent-100); padding:12px 14px; display:flex; flex-direction:column; justify-content:center;">
+        <div style="font-size:11px; font-weight:700; color:var(--accent); letter-spacing:0.06em; margin-bottom:2px;">5. 공용폴더 문서 목록</div>
+        <div style="display:inline-flex; align-items:center; gap:4px; margin-top:4px;">
+          <span style="background:var(--accent); color:#fff; font-size:10px; font-weight:700; border-radius:var(--radius-badge); padding:1px 8px;">트리거형</span>
+        </div>
+      </div>
+      <div style="padding:12px 16px;">
+        <div style="font-size:13.5px; color:var(--text-sub); line-height:1.65;">공용폴더 안에 어떤 파일이 있는지와 각각의 역할을 한 번만 정리. Claude가 필요할 때 여기를 보고 파일 위치를 파악.</div>
+      </div>
+    </div>
+
+    <!-- 섹션 6 -->
+    <div style="display:grid; grid-template-columns:180px 1fr; gap:0; border:1px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--neutral-100); border-right:1px solid var(--border-subtle); padding:12px 14px; display:flex; flex-direction:column; justify-content:center;">
+        <div style="font-size:11px; font-weight:700; color:var(--primary); letter-spacing:0.06em; margin-bottom:2px;">6. 인수인계서 규칙</div>
+        <div style="display:inline-flex; align-items:center; gap:4px; margin-top:4px;">
+          <span style="background:var(--neutral-300); color:var(--text-sub); font-size:10px; font-weight:700; border-radius:var(--radius-badge); padding:1px 8px;">직접 규칙형</span>
+        </div>
+      </div>
+      <div style="padding:12px 16px;">
+        <div style="font-size:13.5px; color:var(--text-sub); line-height:1.65;">인수인계서를 언제 작성하고, 어떻게 불러오는지에 대한 규칙. 세션 간 연결의 핵심이라 CLAUDE.md에 직접 기술.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout">
+    <p>트리거형 섹션은 "어떤 상황에서 어떤 파일을 읽어라"가 전부입니다. 직접 규칙형도 항목당 한두 줄을 넘기지 않도록 유지합니다. <strong>분리의 목적은 효율이 아니라 관리입니다</strong> — 고칠 것이 생겼을 때 해당 파일만 열면 된다는 것, 그게 핵심입니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">25</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 26 — 이렇게 쓰는 이유
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 05</div>
+  <h2 style="margin-bottom:6px;">이렇게 쓰는 이유</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:22px;">
+    설계 방식에는 정답이 없습니다. 하지만 이 구조로 운영하면서 확실히 좋아진 것들이 있습니다.
+  </p>
+
+  <!-- 이유 3가지 -->
+  <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:22px;">
+
+    <div style="display:grid; grid-template-columns:48px 1fr; gap:0; align-items:start;">
+      <div style="display:flex; justify-content:center; padding-top:2px;">
+        <div style="width:36px; height:36px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; color:#fff; flex-shrink:0;">1</div>
+      </div>
+      <div style="padding-left:10px;">
+        <div style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:5px;">수정이 쉽다</div>
+        <div style="font-size:14px; color:var(--text-sub); line-height:1.7;">Claude와의 관계 설정을 바꾸고 싶으면 세계관.md만 열면 됩니다. 미드저니 규칙을 업데이트하고 싶으면 mj_prompt_rules.md만 수정. CLAUDE.md를 건드릴 필요가 없습니다. 역할별로 파일이 나뉘어 있으니 수정 범위가 명확합니다.</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:48px 1fr; gap:0; align-items:start;">
+      <div style="display:flex; justify-content:center; padding-top:2px;">
+        <div style="width:36px; height:36px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; color:#fff; flex-shrink:0;">2</div>
+      </div>
+      <div style="padding-left:10px;">
+        <div style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:5px;">어느 세션에서 시작해도 동일하게 작동한다</div>
+        <div style="font-size:14px; color:var(--text-sub); line-height:1.7;">공용폴더가 항상 같은 위치에 있고 CLAUDE.md가 이를 참조하니까, 새 프로젝트 폴더를 만들어도 기존 세팅이 그대로 유지됩니다. fonts/, design-tokens.md도 마찬가지입니다. 한 번 설치해두면 모든 세션에서 자동으로 활용됩니다.</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:48px 1fr; gap:0; align-items:start;">
+      <div style="display:flex; justify-content:center; padding-top:2px;">
+        <div style="width:36px; height:36px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; color:#fff; flex-shrink:0;">3</div>
+      </div>
+      <div style="padding-left:10px;">
+        <div style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:5px;">인수인계로 세션이 끊겨도 이어진다</div>
+        <div style="font-size:14px; color:var(--text-sub); line-height:1.7;">작업이 끝날 때 인수인계서를 남기면, 다음 세션의 Claude가 그걸 읽고 그대로 이어서 진행합니다. CLAUDE.md가 인수인계서 로딩 규칙을 갖고 있기 때문에, 새 대화를 열어도 이전 맥락이 살아있습니다.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 전체 구조 요약 -->
+  <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:16px 18px; margin-bottom:16px;">
+    <div style="font-size:12px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:12px;">전체 구조 한눈에</div>
+    <div style="display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:0; align-items:center; text-align:center;">
+      <div style="background:var(--accent); border-radius:var(--radius-box); padding:10px 8px;">
+        <div style="font-size:12px; font-weight:700; color:#fff; margin-bottom:2px;">CLAUDE.md</div>
+        <div style="font-size:11px; color:rgba(255,255,255,0.75);">트리거 · 규칙</div>
+      </div>
+      <div style="color:var(--accent); font-size:18px; padding:0 8px;">↔</div>
+      <div style="background:var(--accent-50); border:1px solid var(--accent-100); border-radius:var(--radius-box); padding:10px 8px;">
+        <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:2px;">0.공용/</div>
+        <div style="font-size:11px; color:var(--accent-700);">공유 파일들</div>
+      </div>
+      <div style="color:var(--accent); font-size:18px; padding:0 8px;">↔</div>
+      <div style="background:var(--neutral-200); border-radius:var(--radius-box); padding:10px 8px;">
+        <div style="font-size:12px; font-weight:700; color:var(--primary); margin-bottom:2px;">인수인계서</div>
+        <div style="font-size:11px; color:var(--text-muted);">세션 연결</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p>CLAUDE.md는 <strong>설계도</strong>입니다. 두껍게 쌓지 말고, 얇게 연결하세요. 내용은 파일로, 기억은 인수인계서로, 자산은 공용폴더로 — 이 세 가지가 맞물리면 세션이 끊겨도 작업이 이어집니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">26</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 27 — CLAUDE.md 전체 예시
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 05</div>
+  <h2 style="margin-bottom:4px;">CLAUDE.md 전체 예시</h2>
+  <div class="section-rule"></div>
+
+  <!-- 범례 -->
+  <div style="display:flex; align-items:center; gap:14px; margin-bottom:10px;">
+    <span style="font-size:12px; color:var(--text-muted);">섹션 유형</span>
+    <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--accent-700);">
+      <span style="background:var(--accent); color:#fff; border-radius:var(--radius-badge); padding:1px 9px; font-weight:700; font-size:10px;">트리거형</span>
+      상황이 되면 특정 파일을 읽거나 행동을 시작하는 지시
+    </span>
+    <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted);">
+      <span style="background:var(--neutral-400,#9DA3AF); color:#fff; border-radius:var(--radius-badge); padding:1px 9px; font-weight:700; font-size:10px;">직접 규칙</span>
+      Claude가 항상 따르는 행동 규칙
+    </span>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:4px;">
+
+    <!-- 세션 시작 (트리거) -->
+    <div style="border:1.5px solid var(--accent-100); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--accent-50); padding:5px 12px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:11px; font-weight:700; color:var(--accent); font-family:'Courier New',monospace;"># 세션 시작</span>
+        <span style="background:var(--accent); color:#fff; border-radius:var(--radius-badge); padding:1px 9px; font-weight:700; font-size:10px;">트리거형</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 200px; gap:0;">
+        <div style="padding:8px 14px; font-family:'Courier New',monospace; font-size:12px; color:var(--text-sub); line-height:1.8; border-right:1px solid var(--border-subtle);">
+          대화 시작 시 <span class="code-trigger">0.공용/세계관.md</span>를 읽는다.
+        </div>
+        <div style="padding:8px 12px; font-size:11.5px; color:var(--text-muted); line-height:1.6; font-style:italic;">
+          호칭·말투·관계 설정을 매 세션 자동 로딩
+        </div>
+      </div>
+    </div>
+
+    <!-- 기본 행동 규칙 (직접 규칙) -->
+    <div style="border:1.5px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--neutral-200); padding:5px 12px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:11px; font-weight:700; color:var(--primary); font-family:'Courier New',monospace;"># 기본 행동 규칙</span>
+        <span style="background:var(--neutral-400,#9DA3AF); color:#fff; border-radius:var(--radius-badge); padding:1px 9px; font-weight:700; font-size:10px;">직접 규칙</span>
+      </div>
+
+      <!-- ## 작업 전 확인 -->
+      <div style="display:grid; grid-template-columns:1fr 200px; border-bottom:1px solid var(--border-subtle);">
+        <div style="padding:5px 14px; font-family:'Courier New',monospace; font-size:11.5px; color:var(--text-sub); line-height:1.6; border-right:1px solid var(--border-subtle);">
+          <div style="color:var(--text-muted); margin-bottom:1px;">## 작업 전 확인</div>
+          <div>- 요청이 모호할 때 혼자 판단하지 않는다.</div>
+          <div style="padding-left:10px;">선택지를 보여주고 고른 뒤 시작한다.</div>
+          <div>- 복잡한 작업은 시작 전 핵심 사항을 먼저 확인한다.</div>
+          <div>- 의견을 물으면 답하고 기다린다.</div>
+          <div style="padding-left:10px;">혼자 "실행 모드"로 전환하지 않는다.</div>
+        </div>
+        <div style="padding:5px 12px; font-size:11.5px; color:var(--text-muted); line-height:1.5; font-style:italic; display:flex; align-items:center;">
+          모호한 요청을 혼자 해석하고 작업을 시작하는 걸 막는 규칙
+        </div>
+      </div>
+
+      <!-- ## 요청한 것만 한다 -->
+      <div style="display:grid; grid-template-columns:1fr 200px; border-bottom:1px solid var(--border-subtle);">
+        <div style="padding:5px 14px; font-family:'Courier New',monospace; font-size:11.5px; color:var(--text-sub); line-height:1.6; border-right:1px solid var(--border-subtle);">
+          <div style="color:var(--text-muted); margin-bottom:1px;">## 요청한 것만 한다</div>
+          <div>- 부탁받은 것 이상을 만들지 않는다.</div>
+          <div style="padding-left:10px;">있으면 좋을 것 같아도 추가하지 않는다.</div>
+          <div>- 관련 없는 파일은 건드리지 않는다.</div>
+          <div style="padding-left:10px;">개선이 필요해 보이면 말만 하고 기다린다.</div>
+        </div>
+        <div style="padding:5px 12px; font-size:11.5px; color:var(--text-muted); line-height:1.5; font-style:italic; display:flex; align-items:center;">
+          과잉 친절이 오히려 작업을 망치는 경우를 방지
+        </div>
+      </div>
+
+      <!-- ## 파일 수정 규칙 -->
+      <div style="display:grid; grid-template-columns:1fr 200px; border-bottom:1px solid var(--border-subtle);">
+        <div style="padding:5px 14px; font-family:'Courier New',monospace; font-size:11.5px; color:var(--text-sub); line-height:1.6; border-right:1px solid var(--border-subtle);">
+          <div style="color:var(--text-muted); margin-bottom:1px;">## 파일 수정 규칙</div>
+          <div>- 기존 파일 덮어쓰기 전 반드시 먼저 알린다.</div>
+          <div>- 삭제는 명시적으로 "삭제해줘"라고 할 때만.</div>
+          <div>- 돌이킬 수 없는 작업은 반드시 먼저 확인한다.</div>
+        </div>
+        <div style="padding:5px 12px; font-size:11.5px; color:var(--text-muted); line-height:1.5; font-style:italic; display:flex; align-items:center;">
+          데이터 안전을 위한 최소 방어선
+        </div>
+      </div>
+
+      <!-- ## 답변 형식 -->
+      <div style="display:grid; grid-template-columns:1fr 200px;">
+        <div style="padding:5px 14px; font-family:'Courier New',monospace; font-size:11.5px; color:var(--text-sub); line-height:1.6; border-right:1px solid var(--border-subtle);">
+          <div style="color:var(--text-muted); margin-bottom:1px;">## 답변 형식</div>
+          <div>- 불릿·번호 목록은 꼭 필요할 때만. 기본은 문장.</div>
+          <div>- 파일 생성 후 바로 열 수 있는 링크로 제공한다.</div>
+          <div>- 결과 요약은 짧게.</div>
+        </div>
+        <div style="padding:5px 12px; font-size:11.5px; color:var(--text-muted); line-height:1.5; font-style:italic; display:flex; align-items:center;">
+          Cowork 특성상 파일 링크가 결과물의 핵심
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 공용폴더 (트리거) -->
+    <div style="border:1.5px solid var(--accent-100); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--accent-50); padding:5px 12px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:11px; font-weight:700; color:var(--accent); font-family:'Courier New',monospace;"># 공용폴더</span>
+        <span style="background:var(--accent); color:#fff; border-radius:var(--radius-badge); padding:1px 9px; font-weight:700; font-size:10px;">트리거형</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 200px; gap:0;">
+        <div style="padding:7px 14px; font-family:'Courier New',monospace; font-size:11.5px; color:var(--text-sub); line-height:1.7; border-right:1px solid var(--border-subtle);">
+          <div>위치: <span class="code-trigger">claude_work/0.공용/</span></div>
+          <div>- 세계관.md → 호칭·말투·관계 설정</div>
+          <div>- 아이디어메모.md → 메모 요청 시 즉시 추가</div>
+          <div>- 인수인계서_템플릿.md → 세션 연결 양식</div>
+          <div>- fonts/ · design-tokens.md → 디자인 자산</div>
+        </div>
+        <div style="padding:7px 12px; font-size:11.5px; color:var(--text-muted); line-height:1.6; font-style:italic;">
+          어느 세션에서 시작해도 공용 자산의 위치를 알 수 있도록 한 번만 정리
+        </div>
+      </div>
+    </div>
+
+    <!-- 작업별 트리거 -->
+    <div style="border:1.5px solid var(--accent-100); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--accent-50); padding:5px 12px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:11px; font-weight:700; color:var(--accent); font-family:'Courier New',monospace;"># 작업별 트리거</span>
+        <span style="background:var(--accent); color:#fff; border-radius:var(--radius-badge); padding:1px 9px; font-weight:700; font-size:10px;">트리거형</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 200px; gap:0;">
+        <div style="padding:8px 14px; font-family:'Courier New',monospace; font-size:11.5px; color:var(--text-sub); line-height:1.85; border-right:1px solid var(--border-subtle);">
+          <div>- 미드저니 작업 시: <span class="code-trigger">0.공용/mj_prompt_rules.md</span> 먼저 읽기</div>
+        </div>
+        <div style="padding:8px 12px; font-size:11.5px; color:var(--text-muted); line-height:1.6; font-style:italic;">
+          작업이 늘어날수록 이 섹션에 트리거를 추가하는 방식으로 확장
+        </div>
+      </div>
+    </div>
+
+    <!-- 인수인계서 (직접 규칙) -->
+    <div style="border:1.5px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--neutral-200); padding:5px 12px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:11px; font-weight:700; color:var(--primary); font-family:'Courier New',monospace;"># 인수인계서</span>
+        <span style="background:var(--neutral-400,#9DA3AF); color:#fff; border-radius:var(--radius-badge); padding:1px 9px; font-weight:700; font-size:10px;">직접 규칙</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 200px; gap:0;">
+        <div style="padding:8px 14px; font-family:'Courier New',monospace; font-size:11.5px; color:var(--text-sub); line-height:1.85; border-right:1px solid var(--border-subtle);">
+          <div>- 큰 작업 단위가 끝나면 인수인계서 작성을 먼저 제안한다.</div>
+          <div>- 인수인계서가 제시되면 즉시 읽고 이어서 진행한다.</div>
+        </div>
+        <div style="padding:8px 12px; font-size:11.5px; color:var(--text-muted); line-height:1.6; font-style:italic;">
+          세션이 끊겨도 작업이 이어지는 핵심 장치
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">27</div>
+</div>
+
+
+</body>
+</html>

@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6장. 멀티 에이전트 — 혼자 쓰는 소설, 다섯이 쓴다</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:       #3A4152;
+    --primary-300:   #A7ABB8;
+    --primary-400:   #7A7F90;
+    --primary-50:    #F4F5F7;
+    --accent:        #1A9E94;
+    --accent-50:     #E6F6F5;
+    --accent-100:    #BEEAE8;
+    --accent-700:    #0F5F58;
+    --neutral-100:   #F7F8FA;
+    --neutral-200:   #EDEEF2;
+    --neutral-300:   #D3D6DE;
+    --neutral-500:   #8B909C;
+    --neutral-700:   #4A4F5C;
+    --neutral-900:   #1C1E26;
+    --text-main:     #1C1E26;
+    --text-sub:      #4A4F5C;
+    --text-muted:    #8B909C;
+    --surface-page:  #F7F8FA;
+    --surface-card:  #FFFFFF;
+    --border:        #D3D6DE;
+    --border-subtle: #EDEEF2;
+    --radius-box:    2px;
+    --radius-badge:  100px;
+    --font:          'Noto Sans KR', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: #E8EAED;
+    color: var(--text-main);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: var(--surface-card);
+    margin: 12mm auto;
+    padding: 18mm 20mm 20mm;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    overflow: hidden;
+  }
+
+  @media print {
+    body { background: white; }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      height: 297mm;
+      margin: 0;
+      padding: 18mm 20mm 20mm;
+      box-shadow: none;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-child { page-break-after: avoid; break-after: avoid; }
+    @page { size: A4; margin: 0; }
+  }
+
+  .chapter-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .chapter-label::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .page-num {
+    position: absolute;
+    bottom: 14mm;
+    right: 20mm;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .footer-line {
+    position: absolute;
+    bottom: 20mm;
+    left: 20mm;
+    right: 20mm;
+    height: 1px;
+    background: var(--border-subtle);
+  }
+
+  .footer-title {
+    position: absolute;
+    bottom: 14mm;
+    left: 20mm;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  h1 { font-size: 40px; font-weight: 800; line-height: 1.2; color: var(--primary); }
+  h2 { font-size: 26px; font-weight: 700; line-height: 1.3; color: var(--primary); }
+  h3 { font-size: 19px; font-weight: 600; line-height: 1.4; color: var(--primary); }
+
+  p { font-size: 15px; color: var(--text-sub); line-height: 1.75; }
+
+  .lead {
+    font-size: 16px;
+    color: var(--text-sub);
+    line-height: 1.75;
+  }
+
+  .section-rule {
+    width: 100%;
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 10px 0 20px;
+  }
+
+  .callout {
+    background: var(--primary-50);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-box) var(--radius-box) 0;
+    padding: 14px 18px;
+    margin-top: 16px;
+  }
+  .callout p {
+    font-size: 14px;
+    color: var(--text-sub);
+    line-height: 1.7;
+  }
+
+  ul.check-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  ul.check-list li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--text-sub);
+    line-height: 1.65;
+  }
+  ul.check-list li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    border-radius: 2px;
+    border: 1.5px solid var(--accent);
+    background: var(--accent-50);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  thead th {
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-sub);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: var(--neutral-100); }
+
+  .hl { color: var(--accent); font-weight: 600; }
+
+  .code-block {
+    background: var(--primary-50);
+    border-left: 3px solid var(--primary-300);
+    border-radius: 0 var(--radius-box) var(--radius-box) 0;
+    padding: 9px 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-sub);
+    margin: 10px 0;
+  }
+  .code-comment { color: var(--text-muted); font-style: italic; }
+  .code-trigger { color: var(--accent); font-weight: 600; }
+
+  .badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 10px;
+    border-radius: var(--radius-badge);
+    text-transform: uppercase;
+  }
+  .badge-seq  { background: var(--primary-50);  color: var(--primary); }
+  .badge-par  { background: var(--accent-50);   color: var(--accent-700); }
+</style>
+</head>
+<body>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 28 — 챕터 커버
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div style="margin-bottom:60px; padding-top:8px;">
+    <span style="font-size:11px; color:var(--text-muted); font-weight:500; letter-spacing:0.1em;">
+      COWORK에서 하네스? — 핵심은 CLAUDE.md
+    </span>
+  </div>
+
+  <div class="chapter-label">Chapter 06</div>
+  <h1 style="font-size:34px; margin-bottom:16px; word-break:keep-all;">
+    멀티 에이전트 —<br>혼자 쓰는 소설,<br>다섯이 쓴다
+  </h1>
+  <div style="width:48px; height:4px; background:var(--accent); border-radius:2px; margin-bottom:24px;"></div>
+  <p class="lead" style="max-width:420px;">
+    Task 툴 하나면 Claude가 여러 명이 됩니다. 각자 독립적인 컨텍스트를 갖고, 동시에 작업하고, 파일로 결과를 교환합니다. 이것이 Cowork에서 멀티 에이전트를 구현하는 방식입니다.
+  </p>
+
+  <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:20px 22px; margin-top:32px; max-width:440px;">
+    <div style="font-size:11px; font-weight:600; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:14px;">이 장에서 다루는 내용</div>
+    <ul class="check-list">
+      <li>Task 툴 — 독립 컨텍스트 서브에이전트 만들기</li>
+      <li>Staged Parallel — 순차와 병렬을 섞는 방법</li>
+      <li>novel-writer 아키텍처 도표</li>
+      <li>harness.md — 하네스가 눈에 보이는 파일</li>
+      <li>멀티 에이전트가 필요한 순간</li>
+    </ul>
+  </div>
+
+  <div style="position:absolute; right:18mm; bottom:22mm; font-size:96px; font-weight:800; color:var(--primary-50); line-height:1; user-select:none; letter-spacing:-4px;">06</div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">28</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 29 — Task 툴 = 독립 서브에이전트
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 06</div>
+  <h2 style="margin-bottom:6px;">Task 툴 — 독립 컨텍스트 서브에이전트</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:16px;">
+    Cowork에서 멀티 에이전트는 <span class="hl">Task 툴</span> 하나로 구현됩니다. Task 툴을 호출하면 Claude가 완전히 새로운 컨텍스트를 열고, 주어진 프롬프트만 가지고 독립적으로 작업합니다. 메인 대화의 내용을 모르고, 다른 에이전트들이 뭘 하는지도 모릅니다.
+  </p>
+
+  <!-- 핵심 개념 3개 카드 -->
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:18px;">
+    <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:14px 16px;">
+      <div style="font-size:11px; font-weight:700; color:var(--accent); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:8px;">독립 컨텍스트</div>
+      <p style="font-size:13px; line-height:1.6;">서브에이전트는 메인 대화를 볼 수 없습니다. 프롬프트로 전달받은 정보가 전부입니다.</p>
+    </div>
+    <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:14px 16px;">
+      <div style="font-size:11px; font-weight:700; color:var(--accent); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:8px;">병렬 실행</div>
+      <p style="font-size:13px; line-height:1.6;">단일 메시지에서 Task 툴을 여러 번 호출하면 동시에 실행됩니다. 3화를 3명이 같이 씁니다.</p>
+    </div>
+    <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:14px 16px;">
+      <div style="font-size:11px; font-weight:700; color:var(--accent); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:8px;">파일 교환</div>
+      <p style="font-size:13px; line-height:1.6;">에이전트 간 직접 통신은 없습니다. 파일을 쓰고, 다음 에이전트가 그 파일을 읽습니다.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px; font-size:17px;">Staged Parallel — 순차와 병렬을 섞는다</h3>
+  <p style="margin-bottom:14px;">
+    모든 에이전트가 동시에 시작할 수는 없습니다. 앞 단계의 결과물이 있어야 다음 단계가 시작될 수 있기 때문입니다. 이 패턴을 <span class="hl">Staged Parallel</span>이라고 합니다. 단계(Stage)는 순차, 각 단계 내부는 병렬입니다.
+  </p>
+
+  <!-- Staged Parallel 시각화 -->
+  <div style="background:var(--primary-50); border-radius:var(--radius-box); padding:14px 18px; margin-bottom:18px;">
+    <div style="display:flex; align-items:stretch; gap:0;">
+      <!-- STEP 1 -->
+      <div style="flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:90px;">
+        <div style="background:var(--primary); color:#fff; font-size:10px; font-weight:700; padding:4px 10px; border-radius:100px; letter-spacing:0.04em;">STEP 1</div>
+        <div style="font-size:10px; color:var(--text-muted); margin-bottom:2px;">순차</div>
+        <div style="background:#fff; border:1px solid var(--border); border-radius:var(--radius-box); padding:8px 10px; text-align:center; width:100%;">
+          <div style="font-size:11px; font-weight:600; color:var(--primary);">Story Arc</div>
+          <div style="font-size:10px; color:var(--text-muted);">1개</div>
+        </div>
+      </div>
+      <!-- 화살표 -->
+      <div style="display:flex; align-items:center; padding:0 8px; padding-top:28px;">
+        <div style="width:18px; height:1.5px; background:var(--primary-300); position:relative;">
+          <div style="position:absolute; right:-4px; top:-3px; width:0; height:0; border-left:7px solid var(--primary-300); border-top:4px solid transparent; border-bottom:4px solid transparent;"></div>
+        </div>
+      </div>
+      <!-- STEP 2 -->
+      <div style="flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:110px;">
+        <div style="background:var(--accent); color:#fff; font-size:10px; font-weight:700; padding:4px 10px; border-radius:100px; letter-spacing:0.04em;">STEP 2</div>
+        <div style="font-size:10px; color:var(--text-muted); margin-bottom:2px;">병렬 × N</div>
+        <div style="display:flex; flex-direction:column; gap:4px; width:100%;">
+          <div style="background:#fff; border:1px solid var(--accent-100); border-radius:var(--radius-box); padding:5px 8px; text-align:center;">
+            <div style="font-size:11px; font-weight:600; color:var(--accent-700);">EP Writer #1</div>
+          </div>
+          <div style="background:#fff; border:1px solid var(--accent-100); border-radius:var(--radius-box); padding:5px 8px; text-align:center;">
+            <div style="font-size:11px; font-weight:600; color:var(--accent-700);">EP Writer #2</div>
+          </div>
+          <div style="background:#fff; border:1px solid var(--accent-100); border-radius:var(--radius-box); padding:5px 8px; text-align:center;">
+            <div style="font-size:11px; font-weight:600; color:var(--accent-700);">EP Writer #N</div>
+          </div>
+        </div>
+      </div>
+      <!-- 화살표 -->
+      <div style="display:flex; align-items:center; padding:0 8px; padding-top:28px;">
+        <div style="width:18px; height:1.5px; background:var(--primary-300); position:relative;">
+          <div style="position:absolute; right:-4px; top:-3px; width:0; height:0; border-left:7px solid var(--primary-300); border-top:4px solid transparent; border-bottom:4px solid transparent;"></div>
+        </div>
+      </div>
+      <!-- STEP 3 -->
+      <div style="flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:110px;">
+        <div style="background:var(--primary); color:#fff; font-size:10px; font-weight:700; padding:4px 10px; border-radius:100px; letter-spacing:0.04em;">STEP 3</div>
+        <div style="font-size:10px; color:var(--text-muted); margin-bottom:2px;">병렬 × 2</div>
+        <div style="display:flex; flex-direction:column; gap:4px; width:100%;">
+          <div style="background:#fff; border:1px solid var(--border); border-radius:var(--radius-box); padding:5px 8px; text-align:center;">
+            <div style="font-size:11px; font-weight:600; color:var(--primary);">Flow Checker</div>
+          </div>
+          <div style="background:#fff; border:1px solid var(--border); border-radius:var(--radius-box); padding:5px 8px; text-align:center;">
+            <div style="font-size:11px; font-weight:600; color:var(--primary);">Fact Checker</div>
+          </div>
+        </div>
+      </div>
+      <!-- 화살표 -->
+      <div style="display:flex; align-items:center; padding:0 8px; padding-top:28px;">
+        <div style="width:18px; height:1.5px; background:var(--primary-300); position:relative;">
+          <div style="position:absolute; right:-4px; top:-3px; width:0; height:0; border-left:7px solid var(--primary-300); border-top:4px solid transparent; border-bottom:4px solid transparent;"></div>
+        </div>
+      </div>
+      <!-- STEP 4 -->
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
+        <div style="background:var(--primary); color:#fff; font-size:10px; font-weight:700; padding:4px 10px; border-radius:100px; letter-spacing:0.04em;">STEP 4</div>
+        <div style="font-size:10px; color:var(--text-muted); margin-bottom:2px;">취합</div>
+        <div style="background:var(--primary); color:#fff; border-radius:var(--radius-box); padding:8px 10px; text-align:center; width:100%;">
+          <div style="font-size:11px; font-weight:700;">최종본</div>
+          <div style="font-size:10px; color:var(--primary-300);">novel-final.md</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>핵심 규칙:</strong> 각 단계는 이전 단계가 완전히 끝난 후 시작합니다. STEP 2의 EP Writer들은 서로를 모르지만, 모두 STEP 1이 만든 story-bible.md를 읽기 때문에 일관성이 유지됩니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">29</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 30 — novel-writer 아키텍처 도표
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 06</div>
+  <h2 style="margin-bottom:6px;">novel-writer 아키텍처</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:16px;">
+    멀티 에이전트 하네스를 실제로 만들어봤습니다. 소설 한 편을 다섯 에이전트가 역할 분담해서 쓰는 구조입니다. 도표로 전체 흐름을 한눈에 볼 수 있습니다.
+  </p>
+
+  <!-- 아키텍처 도표 SVG (재설계 v5 — 그리드 정렬·대칭·위계 정리) -->
+  <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:14px 16px; margin-bottom:14px;">
+    <svg viewBox="0 0 660 520" xmlns="http://www.w3.org/2000/svg"
+         style="width:100%; display:block;" font-family="'Noto Sans KR', sans-serif">
+      <defs>
+        <marker id="arrG" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#B6BBC7"/>
+        </marker>
+        <marker id="arrT" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#1A9E94"/>
+        </marker>
+        <marker id="arrD" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#3A4152"/>
+        </marker>
+      </defs>
+
+      <!-- ════════════════════════════════════════════════════════
+           GRID
+           좌측 STEP 컬럼:    x=0~78
+           본문 영역:         x=92~660 (center=376)
+           세로 zone 간격:    12px gutter
+      ════════════════════════════════════════════════════════ -->
+
+      <!-- SKILL.md 헤더 (오케스트레이터) — 전체 너비, 위계 강조 -->
+      <rect x="0" y="0" width="660" height="52" rx="8" fill="#3A4152"/>
+      <rect x="0" y="0" width="4" height="52" fill="#1A9E94"/>
+      <text x="376" y="22" text-anchor="middle"
+        font-size="13" font-weight="700" fill="#FFFFFF">
+        SKILL.md  ·  오케스트레이터 — 전체 실행 흐름 제어
+      </text>
+      <text x="376" y="40" text-anchor="middle"
+        font-size="10" fill="#A7ABB8">
+        harness.md에 에이전트 목록 · 역할 · 입출력 파일 명세 정의
+      </text>
+
+      <!-- ════════════════════════════════════════════════════════
+           STEP 1 — Story Arc (y=70~146)
+      ════════════════════════════════════════════════════════ -->
+      <!-- STEP 배지 (박스 수직 중앙 108에 정렬) -->
+      <rect x="6" y="98" width="66" height="20" rx="10" fill="#3A4152"/>
+      <text x="39" y="113" text-anchor="middle"
+        font-size="9.5" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">STEP 1</text>
+      <text x="39" y="131" text-anchor="middle"
+        font-size="8.5" fill="#8B909C">순차</text>
+
+      <!-- Story Arc 박스 — center=376, w=360, x=196 -->
+      <rect x="196" y="70" width="360" height="76" rx="10"
+            fill="#FFFFFF" stroke="#3A4152" stroke-width="1.8"/>
+      <text x="376" y="94" text-anchor="middle"
+        font-size="13.5" font-weight="700" fill="#1C1E26">Story Arc Agent</text>
+      <text x="376" y="112" text-anchor="middle"
+        font-size="10" fill="#8B909C">전체 시리즈 세계관 · 아크 · 캐릭터 설계</text>
+      <text x="376" y="132" text-anchor="middle"
+        font-size="10" font-weight="700" fill="#1A9E94" font-family="'Courier New', monospace">agents/story-arc.md</text>
+
+      <!-- 화살표: Story Arc → story-bible -->
+      <line x1="376" y1="146" x2="376" y2="166"
+            stroke="#1A9E94" stroke-width="2.2" marker-end="url(#arrT)"/>
+
+      <!-- ════════════════════════════════════════════════════════
+           SHARED MEMORY — story-bible.md (y=168~210)
+      ════════════════════════════════════════════════════════ -->
+      <rect x="246" y="168" width="260" height="42" rx="8"
+            fill="#E6F6F5" stroke="#1A9E94" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <text x="376" y="187" text-anchor="middle"
+        font-size="11.5" font-weight="700" fill="#0F5F58" font-family="'Courier New', monospace">📄 story-bible.md</text>
+      <text x="376" y="202" text-anchor="middle"
+        font-size="9.5" fill="#4A4F5C">공유 외부 메모리 · 모든 에이전트가 읽음</text>
+
+      <!-- 분기 화살표: story-bible → EP#1 / EP#2 / EP#N (대칭) -->
+      <!-- story-bible bottom=210, EP top=232. EP centers: 196 / 376 / 556 -->
+      <line x1="306" y1="210" x2="196" y2="230"
+            stroke="#B6BBC7" stroke-width="1.4" marker-end="url(#arrG)"/>
+      <line x1="376" y1="210" x2="376" y2="230"
+            stroke="#B6BBC7" stroke-width="1.4" marker-end="url(#arrG)"/>
+      <line x1="446" y1="210" x2="556" y2="230"
+            stroke="#B6BBC7" stroke-width="1.4" marker-end="url(#arrG)"/>
+
+      <!-- ════════════════════════════════════════════════════════
+           STEP 2 — EP Writers (y=232~314)
+      ════════════════════════════════════════════════════════ -->
+      <rect x="6" y="263" width="66" height="20" rx="10" fill="#1A9E94"/>
+      <text x="39" y="278" text-anchor="middle"
+        font-size="9.5" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">STEP 2</text>
+      <text x="39" y="296" text-anchor="middle"
+        font-size="8.5" fill="#8B909C">병렬 × N</text>
+
+      <!-- EP#1 — center=196, w=160, x=116 -->
+      <rect x="116" y="232" width="160" height="82" rx="9"
+            fill="#FFFFFF" stroke="#1A9E94" stroke-width="1.6"/>
+      <rect x="116" y="232" width="160" height="4" rx="2" fill="#1A9E94"/>
+      <text x="196" y="258" text-anchor="middle"
+        font-size="11.5" font-weight="700" fill="#1C1E26">Episode Writer #1</text>
+      <text x="196" y="276" text-anchor="middle"
+        font-size="9.5" fill="#8B909C">1화 집필</text>
+      <text x="196" y="299" text-anchor="middle"
+        font-size="10" font-weight="700" fill="#0F5F58" font-family="'Courier New', monospace">→ ep01.md</text>
+
+      <!-- EP#2 — center=376, w=160, x=296 -->
+      <rect x="296" y="232" width="160" height="82" rx="9"
+            fill="#FFFFFF" stroke="#1A9E94" stroke-width="1.6"/>
+      <rect x="296" y="232" width="160" height="4" rx="2" fill="#1A9E94"/>
+      <text x="376" y="258" text-anchor="middle"
+        font-size="11.5" font-weight="700" fill="#1C1E26">Episode Writer #2</text>
+      <text x="376" y="276" text-anchor="middle"
+        font-size="9.5" fill="#8B909C">2화 집필</text>
+      <text x="376" y="299" text-anchor="middle"
+        font-size="10" font-weight="700" fill="#0F5F58" font-family="'Courier New', monospace">→ ep02.md</text>
+
+      <!-- EP#N — center=556, w=160, x=476 -->
+      <rect x="476" y="232" width="160" height="82" rx="9"
+            fill="#FFFFFF" stroke="#1A9E94" stroke-width="1.6"/>
+      <rect x="476" y="232" width="160" height="4" rx="2" fill="#1A9E94"/>
+      <text x="556" y="258" text-anchor="middle"
+        font-size="11.5" font-weight="700" fill="#1C1E26">Episode Writer #N</text>
+      <text x="556" y="276" text-anchor="middle"
+        font-size="9.5" fill="#8B909C">N화 집필</text>
+      <text x="556" y="299" text-anchor="middle"
+        font-size="10" font-weight="700" fill="#0F5F58" font-family="'Courier New', monospace">→ epN.md</text>
+
+      <!-- EP 그룹 라벨 — 같은 파일 하나에서 N개 인스턴스 -->
+      <text x="376" y="328" text-anchor="middle"
+        font-size="9.5" fill="#8B909C">
+        <tspan font-family="'Courier New', monospace" font-weight="700" fill="#0F5F58">agents/episode-writer.md</tspan>
+        <tspan dx="6"> · 같은 정의에서 N개 인스턴스 병렬 호출</tspan>
+      </text>
+
+      <!-- 수렴 화살표: EP → Checker
+           EP#1·#N은 박스 바닥(y=314)에서 출발 — 노트 영역 바깥
+           EP#2(가운데) 2개만 노트 아래(y=334)에서 출발 -->
+      <line x1="196" y1="314" x2="220" y2="352"
+            stroke="#B6BBC7" stroke-width="1.4" marker-end="url(#arrG)"/>
+      <line x1="376" y1="334" x2="244" y2="352"
+            stroke="#B6BBC7" stroke-width="1.4" marker-end="url(#arrG)"/>
+      <line x1="376" y1="334" x2="508" y2="352"
+            stroke="#B6BBC7" stroke-width="1.4" marker-end="url(#arrG)"/>
+      <line x1="556" y1="314" x2="532" y2="352"
+            stroke="#B6BBC7" stroke-width="1.4" marker-end="url(#arrG)"/>
+
+      <!-- ════════════════════════════════════════════════════════
+           STEP 3 — Checkers (y=354~430)
+      ════════════════════════════════════════════════════════ -->
+      <rect x="6" y="383" width="66" height="20" rx="10" fill="#3A4152"/>
+      <text x="39" y="398" text-anchor="middle"
+        font-size="9.5" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">STEP 3</text>
+      <text x="39" y="416" text-anchor="middle"
+        font-size="8.5" fill="#8B909C">병렬 검수</text>
+
+      <!-- Flow Checker — center=232, w=232, x=116 -->
+      <rect x="116" y="354" width="232" height="76" rx="9"
+            fill="#FFFFFF" stroke="#3A4152" stroke-width="1.6"/>
+      <text x="232" y="378" text-anchor="middle"
+        font-size="12" font-weight="700" fill="#1C1E26">Flow Checker</text>
+      <text x="232" y="395" text-anchor="middle"
+        font-size="9.5" fill="#8B909C">스토리 흐름 · 연속성 검토</text>
+      <text x="232" y="416" text-anchor="middle"
+        font-size="10" font-weight="700" fill="#0F5F58" font-family="'Courier New', monospace">→ review-flow.md</text>
+
+      <!-- Fact Checker — center=520, w=232, x=404 -->
+      <rect x="404" y="354" width="232" height="76" rx="9"
+            fill="#FFFFFF" stroke="#3A4152" stroke-width="1.6"/>
+      <text x="520" y="378" text-anchor="middle"
+        font-size="12" font-weight="700" fill="#1C1E26">Fact Checker</text>
+      <text x="520" y="395" text-anchor="middle"
+        font-size="9.5" fill="#8B909C">과학적 사실 · 설정 오류 검토</text>
+      <text x="520" y="416" text-anchor="middle"
+        font-size="10" font-weight="700" fill="#0F5F58" font-family="'Courier New', monospace">→ review-facts.md</text>
+
+      <!-- 수렴 화살표: Checker → Final (y=430 → 462, 대칭) -->
+      <line x1="232" y1="430" x2="316" y2="462"
+            stroke="#3A4152" stroke-width="2" marker-end="url(#arrD)"/>
+      <line x1="520" y1="430" x2="436" y2="462"
+            stroke="#3A4152" stroke-width="2" marker-end="url(#arrD)"/>
+
+      <!-- ════════════════════════════════════════════════════════
+           STEP 4 — Final (y=464~516)
+      ════════════════════════════════════════════════════════ -->
+      <rect x="6" y="478" width="66" height="20" rx="10" fill="#3A4152"/>
+      <text x="39" y="493" text-anchor="middle"
+        font-size="9.5" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">STEP 4</text>
+      <text x="39" y="511" text-anchor="middle"
+        font-size="8.5" fill="#8B909C">취합</text>
+
+      <!-- Final 박스 — center=376, w=300, x=226 -->
+      <rect x="226" y="464" width="300" height="52" rx="10" fill="#3A4152"/>
+      <rect x="226" y="464" width="4" height="52" fill="#1A9E94"/>
+      <text x="376" y="486" text-anchor="middle"
+        font-size="12" font-weight="700" fill="#FFFFFF">최종 취합 · 교정 · 최종본 출력</text>
+      <text x="376" y="504" text-anchor="middle"
+        font-size="10.5" fill="#C8CDD8" font-family="'Courier New', monospace">novel-final.md</text>
+    </svg>
+  </div>
+
+  <!-- 범례 -->
+  <div style="display:flex; gap:20px; align-items:center; font-size:11.5px; color:var(--text-muted);">
+    <div style="display:flex; align-items:center; gap:6px;">
+      <div style="width:12px; height:12px; border-radius:2px; background:var(--primary);"></div>
+      <span>순차 실행</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <div style="width:12px; height:12px; border-radius:2px; background:var(--accent);"></div>
+      <span>병렬 실행 (Task 툴)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <div style="width:24px; height:10px; border-radius:2px; background:var(--accent-50); border:1.5px dashed var(--accent);"></div>
+      <span>공유 파일 (외부 메모리)</span>
+    </div>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">30</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 31 — harness.md: 하네스가 눈에 보이는 파일
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 06</div>
+  <h2 style="margin-bottom:6px;">harness.md — 하네스가 눈에 보이는 파일</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:8px; color:var(--text-muted); font-style:italic; font-size:14px;">
+    "하네스가 눈에 안 보인다"는 문제를 해결하는 가장 직접적인 방법입니다.
+  </p>
+
+  <p style="margin-bottom:16px;">
+    SKILL.md가 오케스트레이터(어떻게 실행할지)라면, <span class="hl">harness.md는 에이전트 구성표(누가 무엇을 하는지)</span>입니다. 두 파일을 분리하면 팀 구성을 바꾸고 싶을 때 harness.md만 수정하면 됩니다. 스킬 로직은 건드리지 않아도 됩니다.
+  </p>
+
+  <!-- SKILL.md vs harness.md 비교 -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px;">
+    <div style="background:var(--primary-50); border:1px solid var(--border); border-radius:var(--radius-box); padding:14px 16px;">
+      <div style="font-size:10.5px; font-weight:700; color:var(--primary); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:10px;">SKILL.md</div>
+      <ul class="check-list" style="gap:6px;">
+        <li style="font-size:13px;">실행 순서 (STEP 1 → 2 → 3 → 4)</li>
+        <li style="font-size:13px;">Task 툴 호출 방법</li>
+        <li style="font-size:13px;">에러 처리, 완료 조건</li>
+        <li style="font-size:13px;">최종 취합 로직</li>
+      </ul>
+    </div>
+    <div style="background:var(--accent-50); border:1px solid var(--accent-100); border-radius:var(--radius-box); padding:14px 16px;">
+      <div style="font-size:10.5px; font-weight:700; color:var(--accent-700); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:10px;">harness.md</div>
+      <ul class="check-list" style="gap:6px;">
+        <li style="font-size:13px;">에이전트 목록과 역할 정의</li>
+        <li style="font-size:13px;">각 에이전트가 읽는 파일</li>
+        <li style="font-size:13px;">각 에이전트가 쓰는 파일</li>
+        <li style="font-size:13px;">확장 방법 가이드</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px; font-size:16px;">harness.md 실제 구조</h3>
+
+  <div class="code-block">
+    <span class="code-comment"># novel-writer-by-blue — 에이전트 구성 명세 (Harness)</span><br><br>
+    <span class="code-comment">## 에이전트 구성표</span><br><br>
+    | 에이전트 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 파일 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 실행 방식 &nbsp;&nbsp;&nbsp;&nbsp;| 읽는 것 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 쓰는 것 |<br>
+    |-----------|---------------|------------|----------|---------|<br>
+    <span class="code-trigger">| Story Arc &nbsp;| agents/story-arc.md &nbsp;| 순차 (1)  | input.md | story-bible.md |</span><br>
+    <span class="code-trigger">| EP Writer  | agents/episode-writer.md   | 병렬 × N  | story-bible.md | ep0X.md |</span><br>
+    <span class="code-trigger">| Flow Check | agents/flow-checker.md      | 병렬 (3)  | story-bible + ep* | review-flow.md |</span><br>
+    <span class="code-trigger">| Fact Check | agents/fact-checker.md      | 병렬 (3)  | story-bible + ep* | review-facts.md |</span><br>
+    <span class="code-trigger">| 오케스트레이터 | SKILL.md         | 순차 (4)  | 모든 파일 | novel-final.md |</span>
+  </div>
+
+  <div class="callout" style="margin-top:14px;">
+    <p>에이전트를 추가하고 싶다면 harness.md 테이블에 행 하나 추가하고, agents/ 폴더에 역할 파일을 만들면 됩니다. SKILL.md의 해당 STEP에 Task 호출 한 줄만 추가하면 끝입니다. 전체 구조를 바꿀 필요가 없습니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">31</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 32 — 파일 구조와 에이전트 역할
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 06</div>
+  <h2 style="margin-bottom:6px;">파일 구조와 에이전트 역할</h2>
+  <div class="section-rule"></div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px;">
+    <!-- 파일 구조 -->
+    <div>
+      <h3 style="font-size:15px; margin-bottom:10px;">스킬 파일 구조</h3>
+      <div class="code-block" style="line-height:1.9;">
+        novel-writer-by-blue/<br>
+        <span class="code-trigger">├── SKILL.md</span> &nbsp;&nbsp;<span class="code-comment">← 오케스트레이터</span><br>
+        <span class="code-trigger">├── harness.md</span> &nbsp;<span class="code-comment">← 구성 명세</span><br>
+        └── agents/<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="code-trigger">├── story-arc.md</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="code-trigger">├── episode-writer.md</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="code-trigger">├── flow-checker.md</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="code-trigger">fact-checker.md</span>
+      </div>
+      <p style="font-size:12.5px; color:var(--text-muted); margin-top:8px;">각 에이전트 파일에는 역할·입력·출력 형식·집필 지침이 담겨 있습니다. Task 툴 호출 시 이 파일 내용이 서브에이전트의 시스템 프롬프트가 됩니다.</p>
+    </div>
+
+    <!-- 실행 시 생성 파일 -->
+    <div>
+      <h3 style="font-size:15px; margin-bottom:10px;">실행 시 생성되는 파일</h3>
+      <div class="code-block" style="line-height:1.9;">
+        {작업폴더}/<br>
+        <span class="code-comment">├── input.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 사용자 입력</span><br>
+        <span class="code-trigger">├── story-bible.md &nbsp;← STEP 1 산출</span><br>
+        <span class="code-trigger">├── ep01.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← STEP 2 병렬</span><br>
+        <span class="code-trigger">├── ep02.md</span><br>
+        <span class="code-trigger">├── epN.md</span><br>
+        <span class="code-trigger">├── review-flow.md &nbsp;← STEP 3 병렬</span><br>
+        <span class="code-trigger">├── review-facts.md</span><br>
+        <span class="code-trigger">└── novel-final.md &nbsp;← STEP 4 최종</span>
+      </div>
+      <p style="font-size:12.5px; color:var(--text-muted); margin-top:8px;">파일이 곧 에이전트 간 통신 채널입니다. 직접 대화하지 않아도, 같은 파일을 공유하는 것만으로 협업이 이루어집니다.</p>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px; margin-bottom:10px;">에이전트별 역할 요약</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:22%;">에이전트</th>
+        <th style="width:38%;">하는 일</th>
+        <th style="width:20%;">읽음</th>
+        <th style="width:20%;">씀</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Story Arc</strong></td>
+        <td>세계관·캐릭터·에피소드 아크 설계</td>
+        <td><code style="font-size:11px;">input.md</code></td>
+        <td><code style="font-size:11px; color:var(--accent);">story-bible.md</code></td>
+      </tr>
+      <tr>
+        <td><strong>EP Writer</strong></td>
+        <td>담당 에피소드 집필 (N개 병렬)</td>
+        <td><code style="font-size:11px; color:var(--accent);">story-bible.md</code></td>
+        <td><code style="font-size:11px;">ep0X.md</code></td>
+      </tr>
+      <tr>
+        <td><strong>Flow Checker</strong></td>
+        <td>흐름·연속성·감정 곡선 검수</td>
+        <td>story-bible + ep*</td>
+        <td><code style="font-size:11px;">review-flow.md</code></td>
+      </tr>
+      <tr>
+        <td><strong>Fact Checker</strong></td>
+        <td>과학 사실·세계관 내부 오류 검수</td>
+        <td>story-bible + ep*</td>
+        <td><code style="font-size:11px;">review-facts.md</code></td>
+      </tr>
+      <tr>
+        <td><strong>오케스트레이터</strong></td>
+        <td>결과 취합 · 리뷰 반영 · 최종본</td>
+        <td>모든 파일</td>
+        <td><code style="font-size:11px; color:var(--accent);">novel-final.md</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">32</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 33 — 멀티 에이전트가 필요한 순간
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 06</div>
+  <h2 style="margin-bottom:6px;">멀티 에이전트가 필요한 순간</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:16px;">
+    모든 작업에 멀티 에이전트가 필요한 것은 아닙니다. 단일 에이전트로 충분한 일에 복잡한 구조를 도입하면 오히려 관리 부담이 커집니다. 아래 기준으로 판단하세요.
+  </p>
+
+  <!-- 써야 할 때 vs 말아야 할 때 -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+    <div style="background:var(--accent-50); border:1.5px solid var(--accent-100); border-radius:var(--radius-box); padding:14px 16px;">
+      <div style="font-size:11px; font-weight:700; color:var(--accent-700); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:10px;">✓ 멀티 에이전트가 유리한 경우</div>
+      <ul class="check-list" style="gap:8px;">
+        <li style="font-size:13px;">같은 종류의 작업이 여러 개 동시에 필요할 때<br><span style="font-size:11.5px; color:var(--text-muted);">예: 3화를 동시에 집필</span></li>
+        <li style="font-size:13px;">서로 다른 전문성이 필요한 검수 단계<br><span style="font-size:11.5px; color:var(--text-muted);">예: 흐름 검수 + 사실 검수 동시 진행</span></li>
+        <li style="font-size:13px;">작업 결과물이 파일로 남아야 하는 경우<br><span style="font-size:11.5px; color:var(--text-muted);">각 에이전트의 산출물이 독립적으로 가치 있음</span></li>
+        <li style="font-size:13px;">컨텍스트 격리가 오히려 장점인 경우<br><span style="font-size:11.5px; color:var(--text-muted);">앞 에이전트 편향 없이 독립 판단이 필요할 때</span></li>
+      </ul>
+    </div>
+    <div style="background:var(--primary-50); border:1px solid var(--border); border-radius:var(--radius-box); padding:14px 16px;">
+      <div style="font-size:11px; font-weight:700; color:var(--primary-400); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:10px;">✗ 단일 에이전트가 나은 경우</div>
+      <ul class="check-list" style="gap:8px;">
+        <li style="font-size:13px;">작업이 순서대로 이어지는 단순한 흐름<br><span style="font-size:11.5px; color:var(--text-muted);">예: 문서 하나를 처음부터 끝까지 작성</span></li>
+        <li style="font-size:13px;">에이전트 간 실시간 정보 교환이 필요<br><span style="font-size:11.5px; color:var(--text-muted);">멀티 에이전트는 파일 교환만 가능</span></li>
+        <li style="font-size:13px;">분량이 적어 병렬화 이득이 없는 경우<br><span style="font-size:11.5px; color:var(--text-muted);">1화짜리 단편에 5개 에이전트는 과함</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px; margin-bottom:10px;">하네스가 보인다는 것의 의미</h3>
+  <p style="margin-bottom:12px;">
+    SKILL.md 한 파일에 모든 것을 욱여넣으면 하네스는 눈에 보이지 않습니다. 에이전트 구성표는 harness.md에, 각 에이전트의 역할은 agents/ 폴더에, 실행 로직만 SKILL.md에 남기면 — 소설 집필 팀 전체가 파일 구조로 눈에 보입니다.
+  </p>
+
+  <div class="callout">
+    <p>
+      <strong>이것이 하네스 엔지니어링의 핵심입니다.</strong> 복잡한 작업을 역할 있는 에이전트들로 분해하고, 파일로 연결하고, 순서를 설계하는 것. Claude Code의 개발자 용어가 아닌, Cowork 사용자가 직접 설계하고 운영할 수 있는 멀티 에이전트 시스템입니다.
+    </p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">33</div>
+</div>
+
+</body>
+</html>

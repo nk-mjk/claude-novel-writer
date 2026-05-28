@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3장. CLAUDE.md, 직접 쓰지 마세요 — Cowork에서 하네스?</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:       #3A4152;
+    --primary-300:   #A7ABB8;
+    --primary-400:   #7A7F90;
+    --primary-50:    #F4F5F7;
+    --accent:        #1A9E94;
+    --accent-50:     #E6F6F5;
+    --accent-100:    #BEEAE8;
+    --accent-700:    #0F5F58;
+    --neutral-100:   #F7F8FA;
+    --neutral-200:   #EDEEF2;
+    --neutral-300:   #D3D6DE;
+    --neutral-500:   #8B909C;
+    --neutral-700:   #4A4F5C;
+    --neutral-900:   #1C1E26;
+    --text-main:     #1C1E26;
+    --text-sub:      #4A4F5C;
+    --text-muted:    #8B909C;
+    --surface-page:  #F7F8FA;
+    --surface-card:  #FFFFFF;
+    --border:        #D3D6DE;
+    --border-subtle: #EDEEF2;
+    --radius-box:    2px;
+    --radius-badge:  100px;
+    --font:          'Noto Sans KR', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: #E8EAED;
+    color: var(--text-main);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: var(--surface-card);
+    margin: 12mm auto;
+    padding: 18mm 20mm 20mm;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    overflow: hidden;
+  }
+
+  @media print {
+    body { background: white; }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      height: 297mm;
+      margin: 0;
+      padding: 18mm 20mm 20mm;
+      box-shadow: none;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-child { page-break-after: avoid; break-after: avoid; }
+    @page { size: A4; margin: 0; }
+  }
+
+  .chapter-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .chapter-label::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .page-num {
+    position: absolute;
+    bottom: 14mm;
+    right: 20mm;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .footer-line {
+    position: absolute;
+    bottom: 20mm;
+    left: 20mm;
+    right: 20mm;
+    height: 1px;
+    background: var(--border-subtle);
+  }
+
+  .footer-title {
+    position: absolute;
+    bottom: 14mm;
+    left: 20mm;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  h1 { font-size: 40px; font-weight: 800; line-height: 1.2; color: var(--primary); }
+  h2 { font-size: 26px; font-weight: 700; line-height: 1.3; color: var(--primary); }
+  h3 { font-size: 19px; font-weight: 600; line-height: 1.4; color: var(--primary); }
+  p  { font-size: 15.5px; line-height: 1.8; color: var(--text-sub); }
+
+  .lead {
+    font-size: 17px;
+    line-height: 1.85;
+    color: var(--text-sub);
+    font-weight: 400;
+  }
+
+  .section-rule {
+    width: 32px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    margin: 14px 0 18px;
+  }
+
+  .callout {
+    background: var(--accent-50);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-box) var(--radius-box) 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+  }
+  .callout p {
+    font-size: 15.5px;
+    color: var(--accent-700);
+    font-weight: 500;
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  .badge {
+    display: inline-block;
+    background: var(--accent-50);
+    color: var(--accent-700);
+    border-radius: var(--radius-badge);
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .check-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .check-list li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 15px;
+    color: var(--text-sub);
+    line-height: 1.65;
+  }
+  .check-list li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    border-radius: 2px;
+    border: 1.5px solid var(--accent);
+    background: var(--accent-50);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    margin: 12px 0;
+  }
+  thead th {
+    background: var(--primary-50);
+    color: var(--primary);
+    font-weight: 700;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-sub);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: var(--neutral-100); }
+
+  .hl { color: var(--accent); font-weight: 600; }
+
+  /* 코드 블록 */
+  .code-block {
+    background: var(--primary-50);
+    border-left: 3px solid var(--primary-300);
+    border-radius: 0 var(--radius-box) var(--radius-box) 0;
+    padding: 16px 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-sub);
+    margin: 12px 0;
+    overflow: hidden;
+  }
+  .code-block .comment { color: var(--text-muted); }
+  .code-block .key { color: var(--accent-700); }
+  .code-block .val { color: var(--primary); }
+</style>
+</head>
+<body>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 10 — 챕터 커버
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div style="margin-bottom:60px; padding-top:8px;">
+    <span style="font-size:11px; color:var(--text-muted); font-weight:500; letter-spacing:0.1em;">
+      COWORK에서 하네스? — 핵심은 CLAUDE.md
+    </span>
+  </div>
+
+  <div class="chapter-label">Chapter 03</div>
+  <h1 style="font-size:38px; margin-bottom:16px; word-break:keep-all;">
+    CLAUDE.md,<br>직접 쓰지 마세요
+  </h1>
+  <div style="width:48px; height:4px; background:var(--accent); border-radius:2px; margin-bottom:24px;"></div>
+  <p class="lead" style="max-width:380px;">
+    빈 파일 앞에서 막막했던 경험, 한 번쯤 있으실 겁니다. 좋은 CLAUDE.md는 혼자 쓰는 게 아니라 Claude와 함께 만드는 것입니다.
+  </p>
+
+  <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:20px 22px; margin-top:32px; max-width:440px;">
+    <div style="font-size:11px; font-weight:600; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:14px;">이 장에서 다루는 내용</div>
+    <ul class="check-list">
+      <li>직접 쓰면 왜 힘든가</li>
+      <li>Claude에게 인터뷰받듯 만드는 방법</li>
+      <li>트리거만 남기고 나머지는 파일로 분리하라</li>
+      <li>다이어트 — 리뷰도 Claude한테 맡겨라</li>
+    </ul>
+  </div>
+
+  <div style="position:absolute; right:18mm; bottom:22mm; font-size:96px; font-weight:800; color:var(--primary-50); line-height:1; user-select:none; letter-spacing:-4px;">03</div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">11</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 11 — 직접 쓰면 왜 힘든가
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 03</div>
+  <h2 style="margin-bottom:6px;">직접 쓰면 왜 힘든가</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:22px;">
+    CLAUDE.md를 처음 만들려는 사람 앞에는 빈 텍스트 파일 하나만 있습니다. 말투를 써야 하는지, 금지사항을 써야 하는지, 얼마나 써야 하는지 — 기준이 없으면 시작부터 막힙니다. 그리고 어떻게든 쓰더라도 세 가지 함정이 기다리고 있습니다.
+  </p>
+
+  <!-- 함정 3가지 카드 -->
+  <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+
+    <div style="display:grid; grid-template-columns:48px 1fr; gap:0; border:1px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--primary); display:flex; align-items:center; justify-content:center;">
+        <span style="font-size:20px; font-weight:800; color:rgba(255,255,255,0.5);">1</span>
+      </div>
+      <div style="padding:14px 18px;">
+        <div style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:4px;">뭘 써야 할지 모른다</div>
+        <p style="font-size:14px; line-height:1.65; margin:0;">말투인가, 규칙인가, 금지사항인가. 구조가 없으면 생각나는 것을 랜덤하게 적게 됩니다. 결과적으로 중요한 것은 빠지고, 없어도 되는 것은 길게 적힙니다.</p>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:48px 1fr; gap:0; border:1px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--primary); display:flex; align-items:center; justify-content:center;">
+        <span style="font-size:20px; font-weight:800; color:rgba(255,255,255,0.5);">2</span>
+      </div>
+      <div style="padding:14px 18px;">
+        <div style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:4px;">길어질수록 효과가 떨어진다</div>
+        <p style="font-size:14px; line-height:1.65; margin:0;">쓰다 보면 욕심이 생겨 계속 추가하게 됩니다. 그런데 CLAUDE.md가 너무 길면 컨텍스트를 낭비하고, Claude가 중요한 규칙을 놓치기 시작합니다. 많이 쓴다고 더 잘 작동하지 않습니다.</p>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:48px 1fr; gap:0; border:1px solid var(--border-subtle); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--primary); display:flex; align-items:center; justify-content:center;">
+        <span style="font-size:20px; font-weight:800; color:rgba(255,255,255,0.5);">3</span>
+      </div>
+      <div style="padding:14px 18px;">
+        <div style="font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:4px;">한 번 쓰고 방치된다</div>
+        <p style="font-size:14px; line-height:1.65; margin:0;">처음에 공들여 만들어도 시간이 지나면 업데이트를 안 하게 됩니다. 작업 방식이 바뀌었는데 CLAUDE.md는 예전 규칙을 갖고 있으면, 오히려 방해가 됩니다.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout">
+    <p>문제는 글쓰기 실력이 아닙니다. <strong>구조를 모른 채 시작하는 것</strong>입니다. 좋은 CLAUDE.md는 혼자 쓰는 문서가 아니라, Claude와 대화하며 뽑아내는 결과물입니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">12</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 12 — Claude에게 인터뷰받듯 만드는 방법
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 03</div>
+  <h2 style="margin-bottom:6px;">Claude에게 인터뷰받듯 만드는 방법</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:20px;">
+    CLAUDE.md를 먼저 쓰려고 하지 마세요. 대신 Claude에게 이렇게 말하세요 — <span class="hl">"내 CLAUDE.md를 만들어줘. 필요한 걸 나한테 물어봐."</span> 그러면 Claude가 인터뷰어가 됩니다.
+  </p>
+
+  <!-- 대화 시뮬레이션 -->
+  <div style="border:1.5px solid var(--border); border-radius:var(--radius-box); overflow:hidden; margin-bottom:20px;">
+
+    <div style="background:var(--primary-50); padding:10px 18px; border-bottom:1px solid var(--border-subtle);">
+      <span style="font-size:12px; font-weight:700; color:var(--primary); letter-spacing:0.06em; text-transform:uppercase;">인터뷰 흐름 예시</span>
+    </div>
+
+    <div style="padding:16px 18px; display:flex; flex-direction:column; gap:12px;">
+
+      <!-- Claude 질문 -->
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div style="flex-shrink:0; background:var(--accent); color:#fff; font-size:11px; font-weight:700; border-radius:var(--radius-badge); padding:3px 10px;">Claude</div>
+        <div style="background:var(--accent-50); border-radius:0 var(--radius-box) var(--radius-box) var(--radius-box); padding:10px 14px; font-size:14px; color:var(--accent-700); line-height:1.65;">
+          어떤 언어와 말투로 답변할까요? 존댓말/반말, 이모지 사용 여부도 알려주세요.
+        </div>
+      </div>
+
+      <!-- 사용자 답변 -->
+      <div style="display:flex; gap:12px; align-items:center; justify-content:flex-end;">
+        <div style="background:var(--neutral-100); border-radius:var(--radius-box) 0 var(--radius-box) var(--radius-box); padding:10px 14px; font-size:14px; color:var(--text-sub); line-height:1.65;">
+          한국어로, 친근하지만 존댓말. 이모지는 안 써도 돼.
+        </div>
+        <div style="flex-shrink:0; background:var(--neutral-300); color:var(--text-sub); font-size:11px; font-weight:700; border-radius:var(--radius-badge); padding:3px 10px;">나</div>
+      </div>
+
+      <!-- Claude 질문 2 -->
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div style="flex-shrink:0; background:var(--accent); color:#fff; font-size:11px; font-weight:700; border-radius:var(--radius-badge); padding:3px 10px;">Claude</div>
+        <div style="background:var(--accent-50); border-radius:0 var(--radius-box) var(--radius-box) var(--radius-box); padding:10px 14px; font-size:14px; color:var(--accent-700); line-height:1.65;">
+          파일을 만들 때 기본 저장 위치와 파일명 규칙이 있나요?
+        </div>
+      </div>
+
+      <!-- 사용자 답변 2 -->
+      <div style="display:flex; gap:12px; align-items:center; justify-content:flex-end;">
+        <div style="background:var(--neutral-100); border-radius:var(--radius-box) 0 var(--radius-box) var(--radius-box); padding:10px 14px; font-size:14px; color:var(--text-sub); line-height:1.65;">
+          claude_work/ 폴더에, 파일명은 YYYYMMDD_내용 형식으로.
+        </div>
+        <div style="flex-shrink:0; background:var(--neutral-300); color:var(--text-sub); font-size:11px; font-weight:700; border-radius:var(--radius-badge); padding:3px 10px;">나</div>
+      </div>
+
+      <!-- Claude 질문 3 -->
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div style="flex-shrink:0; background:var(--accent); color:#fff; font-size:11px; font-weight:700; border-radius:var(--radius-badge); padding:3px 10px;">Claude</div>
+        <div style="background:var(--accent-50); border-radius:0 var(--radius-box) var(--radius-box) var(--radius-box); padding:10px 14px; font-size:14px; color:var(--accent-700); line-height:1.65;">
+          절대로 하면 안 되는 것, 혹은 반드시 먼저 확인해야 할 상황이 있나요?
+        </div>
+      </div>
+
+    </div>
+
+    <div style="background:var(--neutral-100); padding:12px 18px; border-top:1px solid var(--border-subtle); font-size:13px; color:var(--text-muted);">
+      … 몇 가지 더 묻고 나면 Claude가 답변을 정리해서 CLAUDE.md 초안을 생성합니다.
+    </div>
+  </div>
+
+  <div class="callout">
+    <p>인터뷰 방식의 핵심은 <strong>구조가 Claude에게 있다</strong>는 것입니다. 나는 내 작업 방식을 말하기만 하면 됩니다. 빈 파일 앞에서 막막할 필요가 없습니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">13</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 13 — 트리거만 남기고 나머지는 파일로 분리하라
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 03</div>
+  <h2 style="margin-bottom:6px;">트리거만 남기고 나머지는 파일로 분리하라</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:20px;">
+    CLAUDE.md가 완성된 뒤에도 욕심이 생깁니다. 이것도 추가하고 싶고, 저것도 쓰고 싶고. 그러다 보면 CLAUDE.md가 300줄, 500줄이 됩니다. Claude가 매 대화마다 그 내용을 전부 읽어야 하니 컨텍스트가 낭비되고, 정작 중요한 규칙은 희석됩니다.
+  </p>
+
+  <!-- Before / After 비교 -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px;">
+
+    <!-- Before -->
+    <div style="border:1.5px solid var(--border); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--neutral-200); padding:10px 16px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:13px; font-weight:700; color:var(--text-sub);">CLAUDE.md (비대한 버전)</span>
+        <span style="font-size:11px; color:var(--text-muted); background:var(--neutral-300); border-radius:var(--radius-badge); padding:2px 10px;">450줄</span>
+      </div>
+      <div style="padding:12px 16px; font-family:'Courier New',monospace; font-size:12px; line-height:1.8; color:var(--text-sub); background:var(--neutral-100);">
+        <div style="color:var(--text-muted);"># 말투 규칙</div>
+        <div>한국어로 답변한다. 존댓말을 사용한다…</div>
+        <div>이모지는 쓰지 않는다. 단, 사용자가…</div>
+        <div style="color:var(--text-muted);"># 미드저니 프롬프트</div>
+        <div>--ar 16:9 기본값. 스타일은 --sref…</div>
+        <div>네거티브 프롬프트 목록: blurry…</div>
+        <div style="color:var(--text-muted);"># 파일 관리</div>
+        <div>저장 위치: claude_work/…</div>
+        <div>파일명 규칙: YYYYMMDD_…</div>
+        <div style="color:var(--text-muted); margin-top:4px;">… (계속)</div>
+      </div>
+    </div>
+
+    <!-- After -->
+    <div style="border:2px solid var(--accent-100); border-radius:var(--radius-box); overflow:hidden;">
+      <div style="background:var(--accent-50); padding:10px 16px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:13px; font-weight:700; color:var(--accent-700);">CLAUDE.md (트리거만)</span>
+        <span style="font-size:11px; color:var(--accent-700); background:var(--accent-100); border-radius:var(--radius-badge); padding:2px 10px;">40줄</span>
+      </div>
+      <div style="padding:12px 16px; font-family:'Courier New',monospace; font-size:12px; line-height:1.8; color:var(--text-sub); background:var(--surface-card);">
+        <div style="color:var(--accent);"># 세계관 로딩</div>
+        <div>대화 시작 시 세계관.md를 읽는다.</div>
+        <div style="color:var(--accent); margin-top:4px;"># 미드저니 규칙</div>
+        <div>MJ 프롬프트 필요 시</div>
+        <div>mj_prompt_rules.md를 먼저 읽는다.</div>
+        <div style="color:var(--accent); margin-top:4px;"># 파일 관리</div>
+        <div>저장 위치·파일명 규칙은</div>
+        <div>파일관리규칙.md 참조.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 파일 구조 시각화 -->
+  <div style="background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:var(--radius-box); padding:14px 18px; margin-bottom:16px;">
+    <div style="font-size:12px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:12px;">권장 폴더 구조</div>
+    <div style="font-family:'Courier New',monospace; font-size:13px; line-height:2; color:var(--text-sub);">
+      <div><span style="color:var(--accent); font-weight:700;">claude_work/</span></div>
+      <div style="padding-left:16px;"><span style="color:var(--accent-700); font-weight:600;">├── CLAUDE.md</span> <span style="color:var(--text-muted); font-size:12px;">← 트리거만. 짧고 가볍게</span></div>
+      <div style="padding-left:16px;"><span style="color:var(--primary-400);">└── 0.공용/</span></div>
+      <div style="padding-left:36px;"><span style="color:var(--text-sub);">├── 세계관.md</span> <span style="color:var(--text-muted); font-size:12px;">← 말투·관계·기억</span></div>
+      <div style="padding-left:36px;"><span style="color:var(--text-sub);">├── 아이디어메모.md</span> <span style="color:var(--text-muted); font-size:12px;">← 대화 중 떠오른 기록</span></div>
+      <div style="padding-left:36px;"><span style="color:var(--text-sub);">├── 인수인계서_템플릿.md</span> <span style="color:var(--text-muted); font-size:12px;">← 세션 인계 표준 양식</span></div>
+      <div style="padding-left:36px;"><span style="color:var(--text-sub);">├── mj_prompt_rules.md</span> <span style="color:var(--text-muted); font-size:12px;">← MJ 전용 규칙</span></div>
+      <div style="padding-left:36px;"><span style="color:var(--text-sub);">├── fonts/</span> <span style="color:var(--text-muted); font-size:12px;">← 한글 폰트 모음</span></div>
+      <div style="padding-left:36px;"><span style="color:var(--text-sub);">└── design-tokens.md</span> <span style="color:var(--text-muted); font-size:12px;">← 디자인 토큰 참고</span></div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p>CLAUDE.md는 <strong>목차</strong>가 되어야 합니다. 세부 내용은 별도 파일에 두고, CLAUDE.md는 "이 상황에서 저 파일을 읽어라"는 트리거만 담습니다. 이렇게 하면 컨텍스트도 절약되고 유지보수도 쉬워집니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">14</div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE 14 — 다이어트 — 리뷰도 Claude한테 맡겨라
+════════════════════════════════════════ -->
+<div class="page">
+  <div style="position:absolute; top:0; left:0; right:0; height:5px; background:var(--accent);"></div>
+
+  <div class="chapter-label" style="margin-top:8px;">Chapter 03</div>
+  <h2 style="margin-bottom:6px;">다이어트 — 리뷰도 Claude한테 맡겨라</h2>
+  <div class="section-rule"></div>
+
+  <p style="margin-bottom:20px;">
+    CLAUDE.md는 한 번 만들고 끝이 아닙니다. 쓰다 보면 조금씩 추가되고, 어느 순간 다시 무거워집니다. 이때도 직접 정리하려 하지 마세요. Claude에게 맡기면 됩니다.
+  </p>
+
+  <!-- 리뷰 요청 방법 -->
+  <div style="margin-bottom:22px;">
+    <div style="font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:12px;">다이어트 프롬프트 예시</div>
+
+    <div style="border:1.5px solid var(--border); border-radius:var(--radius-box); overflow:hidden; margin-bottom:12px;">
+      <div style="background:var(--neutral-200); padding:8px 16px;">
+        <span style="font-size:11px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase;">기본 리뷰</span>
+      </div>
+      <div style="padding:14px 18px; background:var(--surface-card); font-size:14px; color:var(--text-sub); line-height:1.75;">
+        "CLAUDE.md를 읽고 중복된 규칙, 더 이상 필요 없어 보이는 내용, 별도 파일로 분리하면 좋을 내용을 찾아줘."
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 리뷰 체크포인트 -->
+  <div style="margin-bottom:20px;">
+    <div style="font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:12px;">리뷰 시 확인할 세 가지</div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <div style="display:flex; gap:14px; align-items:center; padding:8px 16px; background:var(--neutral-100); border-radius:var(--radius-box);">
+        <div style="flex-shrink:0; width:24px; height:24px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; margin-top:1px;">1</div>
+        <div>
+          <div style="font-size:14.5px; font-weight:600; color:var(--text-main); margin-bottom:3px;">중복·겹치는 규칙</div>
+          <div style="font-size:13.5px; color:var(--text-sub); line-height:1.6;">같은 말이 다른 섹션에 반복되고 있지는 않은가</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:14px; align-items:center; padding:8px 16px; background:var(--neutral-100); border-radius:var(--radius-box);">
+        <div style="flex-shrink:0; width:24px; height:24px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; margin-top:1px;">2</div>
+        <div>
+          <div style="font-size:14.5px; font-weight:600; color:var(--text-main); margin-bottom:3px;">분리 가능한 세부 내용</div>
+          <div style="font-size:13.5px; color:var(--text-sub); line-height:1.6;">CLAUDE.md에 있지만 별도 파일로 뺄 수 있는 상세 내용</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:14px; align-items:center; padding:8px 16px; background:var(--neutral-100); border-radius:var(--radius-box);">
+        <div style="flex-shrink:0; width:24px; height:24px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; margin-top:1px;">3</div>
+        <div>
+          <div style="font-size:14.5px; font-weight:600; color:var(--text-main); margin-bottom:3px;">현실과 맞지 않는 규칙</div>
+          <div style="font-size:13.5px; color:var(--text-sub); line-height:1.6;">작업 방식이 바뀌었는데 예전 규칙이 그대로 남아 있지 않은가</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLAUDE.md 실전 규칙 예시 -->
+  <div style="margin-bottom:16px;">
+    <div style="font-size:13px; font-weight:700; color:var(--text-muted); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:10px;">CLAUDE.md에 직접 넣어두는 방법</div>
+    <div style="background:var(--primary-50); border-left:3px solid var(--primary-300); border-radius:0 var(--radius-box) var(--radius-box) 0; padding:9px 14px; font-family:'Courier New',monospace; font-size:12.5px; line-height:1.7; color:var(--text-sub);">
+      <div style="color:var(--text-muted);">### CLAUDE.md 최적화 규칙</div>
+      <div>- 새 섹션이 추가되거나 200줄을 넘기면,</div>
+      <div>&nbsp;&nbsp;수정 완료 후 아래 기준으로 점검한다.</div>
+      <div style="color:var(--text-muted);">&nbsp;&nbsp;- 중복되거나 겹치는 규칙이 있는가</div>
+      <div style="color:var(--text-muted);">&nbsp;&nbsp;- 별도 파일로 분리할 수 있는 내용이 섞여 있는가</div>
+      <div style="color:var(--text-muted);">&nbsp;&nbsp;- 더 이상 쓰지 않는 규칙이 있는가</div>
+      <div>- 최적화가 필요하면 이유와 방법을 제시하고</div>
+      <div>&nbsp;&nbsp;진행 여부를 물어본다.</div>
+      <div>- 단순 문구 수정·날짜 업데이트는 검토를 생략한다.</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p>이 규칙을 CLAUDE.md 안에 넣어두면 Claude가 스스로 다이어트 시점을 판단하고 먼저 제안합니다. 한 번 설정해두면 따로 신경 쓸 필요가 없습니다.</p>
+  </div>
+
+  <div class="footer-line"></div>
+  <div class="footer-title">Cowork에서 하네스? — 핵심은 CLAUDE.md</div>
+  <div class="page-num">15</div>
+</div>
+
+
+</body>
+</html>
