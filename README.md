@@ -91,10 +91,11 @@ Claude Cowork에서 **CLAUDE.md를 중심으로 한 하네스(Harness)를 어떻
 
 **조남경** (Blue) — AI 입문 자료를 쓰는 사람
 
-- 미드저니 코리아 페이스북 그룹 운영 (약 1.5만 명)
-- 카카오톡 오픈채팅 **Midjourney Korea** 운영 (약 700명)
-- 유튜브 [미드저니 코리아 조남경](https://www.youtube.com/@mjKorea123) (구독자 약 7,500명)
-- 저서: 미드저니 베스트셀러 2권 · Claude Cowork·디자인 기초서
+- 미드저니 코리아 페이스북 그룹 운영
+- 클로드 코리아 페이스북 그룹 운영
+- 카카오톡 오픈채팅 **Midjourney Korea** 운영
+- 유튜브 [미드저니 코리아 조남경](https://www.youtube.com/@mjKorea123) 
+- 저서: 미드저니 마스터 바이블, 클로드 디자인 시작하기 외 다수
 
 ---
 
